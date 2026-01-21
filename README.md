@@ -113,7 +113,7 @@ used in all experiments.
   Contains aligned, z-scored data for all modalities.
 
   Download:  
-  https://<link-to-data-pickle>
+  https://<[link-to-data-pickle](https://drive.google.com/drive/u/3/folders/1340tEG3_bL9ojHJ8hQmMkBoZ9dSKYUhV)>
 
 ### Dataset splits
 
@@ -121,7 +121,7 @@ used in all experiments.
 JSON file defining fixed sample splits used across all notebooks.
 
   Download:
-  https://<link-to-splits-json>
+  https://<[link-to-splits-json](https://drive.google.com/drive/u/3/folders/1340tEG3_bL9ojHJ8hQmMkBoZ9dSKYUhV)>
 ---
 
 ## Pipeline overview
