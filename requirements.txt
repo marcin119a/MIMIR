@@ -1,0 +1,16 @@
+# Core
+torch>=2.0
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+tqdm
+
+# Optional – baseline methods
+fancyimpute   # SoftImpute, KNN
+mofapy2       # MOFA+ training
+mofax         # MOFA+ model I/O
+
+# Downloading data
+gdown

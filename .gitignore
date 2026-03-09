@@ -1,0 +1,21 @@
+# Virtual environment
+.venv/
+
+# Data & checkpoints (large binary files)
+*.pkl
+*.pt
+aes_redo_z/
+checkpoints/
+
+# Plots
+aes_redo_z/plots/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Misc
+.DS_Store
+data/
