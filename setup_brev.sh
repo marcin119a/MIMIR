@@ -75,3 +75,14 @@ python train_autoencoders.py \
 
 echo ""
 echo "==> Done! Checkpoints saved to aes_redo_z/"
+
+
+# Run Phase 2 training
+echo "==> Starting Phase 2 training..."
+python train_shared.py \
+    --data   "data/$DATA_FILE_NAME" \
+    --splits "data/$SPLITS_FILE_NAME" \
+    --out    checkpoints/finetuned
+
+echo ""
+echo "==> Done! Checkpoints saved to checkpoints/finetuned/"
