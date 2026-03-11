@@ -203,10 +203,8 @@ def main():
         f"train={len(train_idx)} | val={len(val_idx)} | test={len(test_idx)}"
     )
 
-    # ── Per-modality configs (mirror the notebook exactly) ───────────────────
+    # ── Per-modality configs ─────────────────────────────────────────────────
     modality_configs = [
-        dict(name="cnv",         key="cnv",         hidden_layers=[256], n_epochs=60, mask_value=0.0),
-        dict(name="mir",         key="miRNA",        hidden_layers=[128], n_epochs=60, mask_value=0.0),
         dict(name="rna",         key="rna",          hidden_layers=[512], n_epochs=70, mask_value=0.0),
         dict(name="mth",         key="methylation",  hidden_layers=[256], n_epochs=60, mask_value=0.0),
     ]
