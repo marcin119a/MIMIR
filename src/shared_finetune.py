@@ -41,6 +41,7 @@ def run_shared_finetune(
     early_stopping_patience: int = 20,
     lr_scheduler_patience: int = 10,
     lr_scheduler_factor: float = 0.5,
+    gaussian_noise_std: float = 0.0,
     verbose: bool = True,
 ) -> Tuple[
     "MultiModalWithSharedSpace",
@@ -138,6 +139,7 @@ def run_shared_finetune(
             alpha_mask_recon=alpha_mask_recon,
             two_path_clean_for_contrast=two_path_clean_for_contrast,
             grad_clip=grad_clip,
+            gaussian_noise_std=gaussian_noise_std,
         )
 
         val_stats = eval_finetune_epoch(

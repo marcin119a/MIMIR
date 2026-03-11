@@ -500,6 +500,7 @@ def finetune_epoch(
     alpha_mask_recon: float = 0.5,
     two_path_clean_for_contrast: bool = False,
     grad_clip: float = 1.0,
+    gaussian_noise_std: float = 0.0,
 ):
     model.train()
     sums = {"total":0.0, "recon":0.0, "contrast":0.0, "impute":0.0}
@@ -517,10 +518,13 @@ def finetune_epoch(
             # clean path
             shared_clean, _, _ = model(batch_clean)
 
-            # noisy path: sentinel masking
+            # noisy path: sentinel masking + optional Gaussian noise
             noisy_batch, artificial_masks = apply_feature_mask_noise_with_sentinels(
                 batch_clean, mask_values, feature_mask_p
             )
+            if gaussian_noise_std > 0.0:
+                noisy_batch = {m: x + torch.randn_like(x) * gaussian_noise_std
+                               for m, x in noisy_batch.items()}
             _, recons_noisy, _ = model(noisy_batch)
 
             # Reconstruction loss (overall + masked)
@@ -548,6 +552,9 @@ def finetune_epoch(
             noisy_batch, artificial_masks = apply_feature_mask_noise_with_sentinels(
                 batch_clean, mask_values, feature_mask_p
             )
+            if gaussian_noise_std > 0.0:
+                noisy_batch = {m: x + torch.randn_like(x) * gaussian_noise_std
+                               for m, x in noisy_batch.items()}
             shared, recons, _ = model(noisy_batch)
 
             rloss, per_mod_recon = reconstruction_loss_with_masks(
