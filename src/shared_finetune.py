@@ -26,16 +26,21 @@ def run_shared_finetune(
     batch_size: int = 64,
     shuffle_train: bool = True,
     lr: float = 3e-4,
-    weight_decay: float = 1e-5,
+    weight_decay: float = 1e-4,
     epochs: int = 100,
     lambda_contrast: float = 1.0,
     lambda_impute: float = 1.0,
     modality_dropout_prob: float = 0.3,
     feature_mask_p_train: float = 0.2,
     feature_mask_p_val: float = 0.2,
-    alpha_mask_recon: float = 0.5,          # NEW: weight for masked vs overall recon in Phase 2
+    alpha_mask_recon: float = 0.5,
     two_path_clean_for_contrast: bool = False,
     freeze_encoders_decoders: bool = False,
+    proj_activation_dropout: float = 0.1,
+    grad_clip: float = 1.0,
+    early_stopping_patience: int = 20,
+    lr_scheduler_patience: int = 10,
+    lr_scheduler_factor: float = 0.5,
     verbose: bool = True,
 ) -> Tuple[
     "MultiModalWithSharedSpace",
@@ -89,6 +94,7 @@ def run_shared_finetune(
         hidden_dims=hidden_dims,
         shared_dim=shared_dim,
         proj_depth=proj_depth,
+        activation_dropout=proj_activation_dropout,
     ).to(device)
 
     # 4) (Optional) Freeze encoders/decoders
@@ -100,41 +106,49 @@ def run_shared_finetune(
         model.encoders.eval()
         model.decoders.eval()
 
-    # 5) Optimizer
+    # 5) Optimizer + scheduler
     opt = torch.optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=lr,
         weight_decay=weight_decay
     )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        opt, mode="min", patience=lr_scheduler_patience, factor=lr_scheduler_factor, verbose=verbose
+    )
 
-    # 6) Train/eval loops
+    # 6) Train/eval loops with early stopping
     train_loss_hist = {"total": [], "recon": [], "contrast": [], "impute": []}
     val_loss_hist   = {"total": [], "recon": [], "contrast": [], "impute": []}
-    
+
+    best_val_total = float("inf")
+    best_model_state = None
+    epochs_no_improve = 0
+
     for ep in range(1, epochs + 1):
         train_stats = finetune_epoch(
             model=model,
             dataloader=train_loader,
             optimizer=opt,
             device=device,
-            mask_values=mask_values,                    # NEW
+            mask_values=mask_values,
             lambda_contrastive=lambda_contrast,
             lambda_impute=lambda_impute,
             modality_dropout_prob=modality_dropout_prob,
             feature_mask_p=feature_mask_p_train,
-            alpha_mask_recon=alpha_mask_recon,          # NEW
+            alpha_mask_recon=alpha_mask_recon,
             two_path_clean_for_contrast=two_path_clean_for_contrast,
+            grad_clip=grad_clip,
         )
 
         val_stats = eval_finetune_epoch(
             model=model,
             dataloader=val_loader,
             device=device,
-            mask_values=mask_values,                    # NEW
+            mask_values=mask_values,
             lambda_contrastive=lambda_contrast,
             lambda_impute=lambda_impute,
             feature_mask_p=feature_mask_p_val,
-            alpha_mask_recon=alpha_mask_recon,          # NEW
+            alpha_mask_recon=alpha_mask_recon,
             two_path_clean_for_contrast=two_path_clean_for_contrast,
         )
 
@@ -147,6 +161,16 @@ def run_shared_finetune(
             train_loss_hist[k_dst].append(train_stats[k_src])
             val_loss_hist[k_dst].append(val_stats[k_src])
 
+        val_total = val_stats["total_loss"]
+        scheduler.step(val_total)
+
+        if val_total < best_val_total:
+            best_val_total = val_total
+            best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+
         if verbose:
             print(f"[Finetune] ep {ep:03d} | "
                   f"train tot {train_stats['total_loss']:.4f} | "
@@ -157,6 +181,15 @@ def run_shared_finetune(
                   f"recon {val_stats['recon_loss']:.4f} | "
                   f"contr {val_stats['contrast_loss']:.4f} | "
                   f"impute {val_stats['impute_loss']:.4f}")
+
+        if early_stopping_patience > 0 and epochs_no_improve >= early_stopping_patience:
+            if verbose:
+                print(f"[Early stopping] No improvement for {early_stopping_patience} epochs. Stopping at ep {ep}.")
+            break
+
+    # Restore best weights
+    if best_model_state is not None:
+        model.load_state_dict({k: v.to(device) for k, v in best_model_state.items()})
 
     return model, train_loss_hist, val_loss_hist, train_loader, val_loader, test_loader, opt
 

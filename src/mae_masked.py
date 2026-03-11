@@ -499,6 +499,7 @@ def finetune_epoch(
     feature_mask_p: float = 0.1,
     alpha_mask_recon: float = 0.5,
     two_path_clean_for_contrast: bool = False,
+    grad_clip: float = 1.0,
 ):
     model.train()
     sums = {"total":0.0, "recon":0.0, "contrast":0.0, "impute":0.0}
@@ -570,6 +571,8 @@ def finetune_epoch(
 
         optimizer.zero_grad()
         total.backward()
+        if grad_clip > 0.0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
         optimizer.step()
 
         sums["total"]    += total.item()
