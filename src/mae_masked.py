@@ -13,12 +13,19 @@ import pandas as pd
 # Utilities
 ###############################################
 
-def build_mlp(dims: List[int], add_final_activation: bool=False, activation_dropout: float=0.0) -> nn.Sequential:
+def build_mlp(
+    dims: List[int],
+    add_final_activation: bool = False,
+    activation_dropout: float = 0.0,
+    use_batchnorm: bool = False,
+) -> nn.Sequential:
     layers = []
     for i in range(len(dims) - 1):
         layers.append(nn.Linear(dims[i], dims[i+1]))
         is_last = (i == len(dims) - 2)
         if not is_last or add_final_activation:
+            if use_batchnorm:
+                layers.append(nn.BatchNorm1d(dims[i+1]))
             layers.append(nn.ReLU())
             if activation_dropout > 0.0:
                 layers.append(nn.Dropout(p=activation_dropout))
@@ -30,10 +37,10 @@ def build_mlp(dims: List[int], add_final_activation: bool=False, activation_drop
 
 class ModalityEncoder(nn.Module):
     """Encoder: input_dim -> ... -> hidden_dim (no shared projection here)."""
-    def __init__(self, dims: List[int], activation_dropout: float=0.0):
+    def __init__(self, dims: List[int], activation_dropout: float=0.0, use_batchnorm: bool=False):
         super().__init__()
         assert len(dims) >= 2, "dims must include [input_dim, ..., hidden_dim]"
-        self.net = build_mlp(dims, add_final_activation=False, activation_dropout=activation_dropout)
+        self.net = build_mlp(dims, add_final_activation=False, activation_dropout=activation_dropout, use_batchnorm=use_batchnorm)
 
     def forward(self, x):
         return self.net(x)
@@ -84,10 +91,10 @@ class TiedDecoder(nn.Module):
 
 class ModalityDecoder(nn.Module):
     """Decoder: hidden_dim -> ... -> input_dim (untied)."""
-    def __init__(self, dims: List[int], activation_dropout: float=0.0):
+    def __init__(self, dims: List[int], activation_dropout: float=0.0, use_batchnorm: bool=False):
         super().__init__()
         assert len(dims) >= 2, "dims must include [hidden_dim, ..., input_dim]"
-        self.net = build_mlp(dims, add_final_activation=False, activation_dropout=activation_dropout)
+        self.net = build_mlp(dims, add_final_activation=False, activation_dropout=activation_dropout, use_batchnorm=use_batchnorm)
 
     def forward(self, h):
         return self.net(h)
@@ -104,8 +111,9 @@ class ModalityAutoencoder(nn.Module):
                  tied: bool = False,
                  hidden_layers: List[int] = None,
                  input_dim: int = None,
-                 mask_value: float = 0.0,     # NEW: what we put in masked positions
-                 loss_on_masked: bool = True # NEW: whether to only use masked positions in loss
+                 mask_value: float = 0.0,
+                 loss_on_masked: bool = True,
+                 use_batchnorm: bool = False,
                  ):
         super().__init__()
         self.denoising = denoising
@@ -115,7 +123,7 @@ class ModalityAutoencoder(nn.Module):
         self.loss_on_masked = loss_on_masked
         self._last_mask = None  # will store mask for the last forward pass
 
-        self.encoder = ModalityEncoder(encoder_dims, activation_dropout)
+        self.encoder = ModalityEncoder(encoder_dims, activation_dropout, use_batchnorm=use_batchnorm)
         if tied:
             assert input_dim is not None and hidden_layers is not None, \
                 "For tied decoder, pass input_dim and hidden_layers used by the encoder."
@@ -126,7 +134,7 @@ class ModalityAutoencoder(nn.Module):
                 activation_dropout=activation_dropout,
             )
         else:
-            self.decoder = ModalityDecoder(decoder_dims, activation_dropout)
+            self.decoder = ModalityDecoder(decoder_dims, activation_dropout, use_batchnorm=use_batchnorm)
 
     def _add_mask_noise(self, x):
         if not self.training or not self.denoising or self.mask_p <= 0.0:
@@ -152,6 +160,7 @@ def pretrain_modality_epoch(
     device,
     l1_alpha: float = 0.0,
     alpha_mask: float = 1.0,  # weight for masked MSE in training loss
+    grad_clip: float = 0.0,   # max grad norm; 0 = disabled
 ):
     """
     - Replaces true NaNs with ae.mask_value in the input.
@@ -208,6 +217,8 @@ def pretrain_modality_epoch(
             loss = loss + l1_alpha * h.abs().mean()
 
         loss.backward()
+        if grad_clip > 0.0:
+            torch.nn.utils.clip_grad_norm_(ae.parameters(), grad_clip)
         optimizer.step()
 
         total_loss += loss.item()
@@ -710,6 +721,7 @@ def build_pretrain_ae_for_modality(
     tied: bool = False,
     mask_value: float = 0.0,
     loss_on_masked: bool = True,
+    use_batchnorm: bool = False,
 ) -> Tuple[ModalityAutoencoder, int]:
     """
     Returns (autoencoder, hidden_dim). Example:
@@ -731,6 +743,7 @@ def build_pretrain_ae_for_modality(
         input_dim=input_dim,
         mask_value=mask_value,
         loss_on_masked=loss_on_masked,
+        use_batchnorm=use_batchnorm,
     )
     return ae, hidden_dim
 
@@ -759,8 +772,9 @@ def load_modality_with_config(path: str, map_location=None):
         denoising=config.get('denoising', False),
         mask_p=config.get('mask_p', 0.0),
         tied=config.get('tied', False),
-        mask_value=config.get('mask_value', 0.0),          # NEW
-        loss_on_masked=config.get('loss_on_masked', True)  # NEW
+        mask_value=config.get('mask_value', 0.0),
+        loss_on_masked=config.get('loss_on_masked', True),
+        use_batchnorm=config.get('use_batchnorm', False),
     )
     ae.load_state_dict(data['state_dict'])
     return ae, hidden_dim, config

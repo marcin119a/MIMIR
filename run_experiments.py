@@ -61,6 +61,7 @@ EXPERIMENTS = {
     "baseline": {},
 
     # 1. Smaller shared dimension
+    "small_shared_64": dict(shared_dim=64),
     "small_shared_32": dict(shared_dim=32),
     "small_shared_16": dict(shared_dim=16),
 
@@ -83,11 +84,17 @@ EXPERIMENTS = {
     "high_wd_5e4": dict(weight_decay=5e-4),
     "high_wd_1e3": dict(weight_decay=1e-3),
 
+    # 6b. Very high weight decay
+    "high_wd_1e2": dict(weight_decay=1e-2),
+
     # 7. Gaussian noise regularization
     "gaussian_noise_001": dict(gaussian_noise_std=0.01),
 
     # 8. 2-stage training (handled specially – mark with special key)
     "two_stage": dict(_two_stage=True),
+
+    # 8b. Freeze pretrained encoders/decoders for full training
+    "freeze_encoders": dict(freeze_encoders_decoders=True),
 
     # 9. Combined best (aggressive regularization)
     "combined_heavy": dict(
@@ -97,9 +104,13 @@ EXPERIMENTS = {
         feature_mask_p_val=0.4,
         modality_dropout_prob=0.5,
         lr=1e-4,
-        weight_decay=5e-4,
+        weight_decay=1e-3,
         gaussian_noise_std=0.01,
     ),
+
+    # 10. Lower contrastive weight (for cases where contrast_loss overfits)
+    "low_contrast_05": dict(lambda_contrast=0.5),
+    "low_contrast_02": dict(lambda_contrast=0.2),
 }
 
 
@@ -175,7 +186,7 @@ def run_one_experiment(
     best_epoch = 0
     train_at_best = float("inf")
     epochs_no_improve = 0
-    PATIENCE = 20
+    PATIENCE = 12
 
     def _train_phase(model, lr, weight_decay, n_epochs, freeze_enc_dec):
         nonlocal best_val_total, best_model_state, best_epoch, train_at_best, epochs_no_improve
@@ -191,12 +202,12 @@ def run_one_experiment(
             model.encoders.train()
             model.decoders.train()
 
-        opt = torch.optim.Adam(
+        opt = torch.optim.AdamW(
             filter(lambda p: p.requires_grad, model.parameters()),
             lr=lr, weight_decay=weight_decay
         )
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            opt, mode="min", patience=10, factor=0.5
+            opt, mode="min", patience=5, factor=0.5
         )
 
         for ep in range(n_epochs):
