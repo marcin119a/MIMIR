@@ -25,7 +25,7 @@ def build_mlp(
         is_last = (i == len(dims) - 2)
         if not is_last or add_final_activation:
             if use_batchnorm:
-                layers.append(nn.BatchNorm1d(dims[i+1]))
+                layers.append(nn.LayerNorm(dims[i+1]))
             layers.append(nn.ReLU())
             if activation_dropout > 0.0:
                 layers.append(nn.Dropout(p=activation_dropout))
@@ -236,13 +236,13 @@ def pretrain_modality_epoch(
 
 def eval_modality_epoch_masked(ae: ModalityAutoencoder, dataloader: DataLoader, device):
     """
-    Eval with the same behavior:
-    - Use ae.mask_value for true NaNs in the input.
-    - Exclude true NaNs from both overall and masked MSE.
+    Eval in proper eval mode (no train() hack).
+    - Applies the same artificial masking manually (so masked MSE is meaningful).
+    - Excludes true NaNs from both metrics.
     Returns (overall_mse, masked_mse).
     """
     was_training = ae.training
-    ae.train()  # enable internal masking so _last_mask is set
+    ae.eval()
     total_overall, total_masked, n = 0.0, 0.0, 0
 
     with torch.no_grad():
@@ -252,7 +252,17 @@ def eval_modality_epoch_masked(ae: ModalityAutoencoder, dataloader: DataLoader, 
             xb_in = xb.clone()
             xb_in[orig_missing] = ae.mask_value
 
-            _, recon = ae(xb_in)
+            # Manually apply denoising mask (mirrors _add_mask_noise in train mode)
+            if ae.denoising and ae.mask_p > 0.0:
+                artificial_mask = torch.rand_like(xb_in) < ae.mask_p
+                xb_masked = xb_in.clone()
+                xb_masked[artificial_mask] = ae.mask_value
+            else:
+                artificial_mask = torch.zeros_like(xb_in, dtype=torch.bool)
+                xb_masked = xb_in
+
+            h = ae.encoder(xb_masked)
+            recon = ae.decoder(h)
             diff_sq = (recon - xb_in) ** 2
 
             valid = ~orig_missing
@@ -261,8 +271,7 @@ def eval_modality_epoch_masked(ae: ModalityAutoencoder, dataloader: DataLoader, 
             else:
                 overall_mse = diff_sq.mean()
 
-            mask_artificial = ae._last_mask.to(device)
-            mask = mask_artificial & valid
+            mask = artificial_mask & valid
             if mask.any():
                 masked_mse = diff_sq[mask].mean()
             else:
@@ -272,8 +281,8 @@ def eval_modality_epoch_masked(ae: ModalityAutoencoder, dataloader: DataLoader, 
             total_masked += masked_mse.item()
             n += 1
 
-    if not was_training:
-        ae.eval()
+    if was_training:
+        ae.train()
 
     return total_overall / max(n, 1), total_masked / max(n, 1)
 
