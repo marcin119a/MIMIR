@@ -80,35 +80,36 @@ def _compute_loss(recon_dna, meth, mu, logvar, beta):
     recon_loss = diff_sq[valid].mean() if valid.any() else diff_sq.mean()
 
     kld = -0.5 * torch.mean(torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1))
-    return recon_loss + beta * kld, recon_loss
+    return recon_loss + beta * kld, recon_loss, kld
 
 
 def train_epoch(model, dataloader, optimizer, epoch):
     model.train()
-    running_total, running_recon = 0.0, 0.0
-    beta = min(1.0, epoch / Config.BETA_WARMUP_EPOCHS) * Config.BETA_START
+    running_total, running_recon, running_kld = 0.0, 0.0, 0.0
+    beta = min(1.0, epoch / Config.BETA_WARMUP_EPOCHS) * (Config.BETA_START * 0.1)
 
     for batch in dataloader:
         rna  = batch["rna"].to(Config.DEVICE)
         meth = batch["methylation"].to(Config.DEVICE)
 
         recon_dna, mu, logvar = model(rna=rna, site=None)
-        loss, recon = _compute_loss(recon_dna, meth, mu, logvar, beta)
+        loss, recon, kld = _compute_loss(recon_dna, meth, mu, logvar, beta)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         running_total += loss.item()
         running_recon += recon.item()
+        running_kld   += kld.item()
 
     n = len(dataloader)
-    return running_total / n, running_recon / n, beta
+    return running_total / n, running_recon / n, running_kld / n, beta
 
 
 def validate(model, dataloader, epoch):
     model.eval()
-    running_total, running_recon = 0.0, 0.0
-    beta = min(1.0, epoch / Config.BETA_WARMUP_EPOCHS) * Config.BETA_START
+    running_total, running_recon, running_kld = 0.0, 0.0, 0.0
+    beta = min(1.0, epoch / Config.BETA_WARMUP_EPOCHS) * (Config.BETA_START * 0.1)
 
     with torch.no_grad():
         for batch in dataloader:
@@ -116,12 +117,13 @@ def validate(model, dataloader, epoch):
             meth = batch["methylation"].to(Config.DEVICE)
 
             recon_dna, mu, logvar = model(rna=rna, site=None)
-            loss, recon = _compute_loss(recon_dna, meth, mu, logvar, beta)
+            loss, recon, kld = _compute_loss(recon_dna, meth, mu, logvar, beta)
             running_total += loss.item()
             running_recon += recon.item()
+            running_kld   += kld.item()
 
     n = len(dataloader)
-    return running_total / n, running_recon / n
+    return running_total / n, running_recon / n, running_kld / n
 
 
 def plot_losses(train_losses, val_losses, run_id):
@@ -145,7 +147,7 @@ def parse_args():
     p.add_argument("--splits",     default="data/splits.json")
     p.add_argument("--epochs",     type=int,   default=Config.NUM_EPOCHS)
     p.add_argument("--batch_size", type=int,   default=Config.BATCH_SIZE)
-    p.add_argument("--lr",         type=float, default=Config.LEARNING_RATE)
+    p.add_argument("--lr",         type=float, default=1e-4)
     p.add_argument("--latent_dim", type=int,   default=Config.LATENT_DIM)
     return p.parse_args()
 
@@ -190,8 +192,8 @@ def main():
 
     print(f"Starting training for {args.epochs} epochs ...")
     for epoch in range(args.epochs):
-        avg_train_loss, avg_train_recon, beta = train_epoch(model, train_loader, optimizer, epoch)
-        avg_val_loss, avg_val_recon = validate(model, val_loader, epoch)
+        avg_train_loss, avg_train_recon, avg_train_kld, beta = train_epoch(model, train_loader, optimizer, epoch)
+        avg_val_loss, avg_val_recon, avg_val_kld = validate(model, val_loader, epoch)
         scheduler.step(avg_val_recon)
 
         train_losses.append(avg_train_loss)
@@ -201,7 +203,8 @@ def main():
 
         print(
             f"Epoch [{epoch+1}/{args.epochs}] | "
-            f"Train recon: {avg_train_recon:.4f} | Val recon: {avg_val_recon:.4f} | "
+            f"Train recon: {avg_train_recon:.4f} | Train KLD: {avg_train_kld:.4f} | "
+            f"Val recon: {avg_val_recon:.4f} | Val KLD: {avg_val_kld:.4f} | "
             f"Val total: {avg_val_loss:.4f} | β={beta:.5f}"
         )
 
