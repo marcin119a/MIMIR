@@ -5,7 +5,7 @@ Porównuje trzy modele na zadaniu imputacji brakujących wartości:
 
   1. DNA2RNAVAE  (methylation → RNA)       – train_dna2rna.py
   2. RNA2DNAVAE  (RNA → methylation)       – train_rna2dna.py
-  3. SharedVAE   (shared latent space)     – train_shared.py
+  3. Shared   (shared latent space)     – train_shared.py
 
 Dla każdego modelu:
   - maskuje losowo ~20% wartości w zbiorze testowym
@@ -39,7 +39,7 @@ from src.data_utils import (
     load_shared_splits_from_json,
 )
 from src.models import DNA2RNAVAE, RNA2DNAVAE
-from src.mae_masked import MultiModalWithSharedSpace
+from src.mae_masked import MultiModalWithSharedSpace, MultiModalWithSharedVAE
 from src.shared_finetune import load_shared_model, load_modality_with_config, extract_encoder_decoder_from_pretrained
 
 
@@ -114,6 +114,37 @@ def load_shared(ae_dir: str, shared_ckpt: str, multi_omic_data: dict, device: to
         shared_dim=256,
         proj_depth=1,
         checkpoint_path=shared_ckpt,
+        map_location=device,
+    )
+    model = model.to(device)
+    model.eval()
+    return model
+
+
+def load_shared_vae(ae_dir: str, shared_vae_ckpt: str, multi_omic_data: dict, device: torch.device):
+    """Load shared MultiModalWithSharedVAE model."""
+    name_map = {"rna": "rna", "methylation": "mth"}
+    encoders, decoders, hidden_dims = {}, {}, {}
+    for mod in multi_omic_data:
+        short = name_map.get(mod, mod)
+        path = os.path.join(ae_dir, f"{short}_ae.pt")
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"AE checkpoint missing: {path}")
+        ae_m, hidden_dim_m, _ = load_modality_with_config(path, map_location=device)
+        ae_m = ae_m.to(device)
+        enc, dec = extract_encoder_decoder_from_pretrained(ae_m)
+        encoders[mod] = enc
+        decoders[mod] = dec
+        hidden_dims[mod] = hidden_dim_m
+
+    model = load_shared_model(
+        model_class=MultiModalWithSharedVAE,
+        encoders=encoders,
+        decoders=decoders,
+        hidden_dims=hidden_dims,
+        shared_dim=256,
+        proj_depth=1,
+        checkpoint_path=shared_vae_ckpt,
         map_location=device,
     )
     model = model.to(device)
@@ -217,6 +248,41 @@ def impute_shared_crossmodal(
 
 
 @torch.no_grad()
+def impute_shared_vae_crossmodal(
+    model: MultiModalWithSharedVAE,
+    source_mod: str,
+    target_mod: str,
+    source_data: np.ndarray,
+    target_orig: np.ndarray,
+    target_mask: np.ndarray,
+    device: torch.device,
+    batch_size: int = 128,
+):
+    """
+    SharedVAE cross-modal imputation: encode source_mod → mu → decode target_mod.
+    Uses mu (mean) at eval time, i.e. deterministic inference.
+    """
+    N = source_data.shape[0]
+    src_input = np.where(np.isnan(source_data), 0.0, source_data).astype(np.float32)
+    all_preds = []
+
+    model.eval()
+    for start in range(0, N, batch_size):
+        end = min(start + batch_size, N)
+        xb = torch.tensor(src_input[start:end], device=device)
+        h = model.encoders[source_mod](xb)
+        mu = model.proj_mu[source_mod](h)          # deterministic: use mean
+        h_hat = model.rev_projections[target_mod](mu)
+        x_imp = model.decoders[target_mod](h_hat)
+        all_preds.append(x_imp.cpu().numpy())
+
+    preds = np.concatenate(all_preds, axis=0)
+    y_true = target_orig[target_mask]
+    y_pred = preds[target_mask]
+    return compute_metrics(y_true, y_pred), preds
+
+
+@torch.no_grad()
 def impute_shared(
     model: MultiModalWithSharedSpace,
     data_corrupted: dict,
@@ -226,7 +292,7 @@ def impute_shared(
     batch_size: int = 128,
     self_weight: float = 10.0,
 ):
-    """SharedVAE: both modalities together. Evaluate per-modality masked positions."""
+    """Shared: both modalities together. Evaluate per-modality masked positions."""
     from src.data_utils import get_dataloader
 
     modalities = list(data_corrupted.keys())
@@ -282,13 +348,13 @@ def impute_shared(
 def plot_comparison(results: dict, save_path: str):
     """
     results = {
-      "rna":   {"DNA2RNAVAE": metrics, "SharedVAE": metrics},
-      "methylation": {"RNA2DNAVAE": metrics, "SharedVAE": metrics},
+      "rna":   {"DNA2RNAVAE": metrics, "Shared": metrics},
+      "methylation": {"RNA2DNAVAE": metrics, "Shared": metrics},
     }
     """
     metrics_order = ["mse", "pearson", "spearman"]
     metric_labels = {"mse": "MSE ↓", "pearson": "Pearson r ↑", "spearman": "Spearman ρ ↑"}
-    colors = {"DNA2RNAVAE": "#e07b54", "RNA2DNAVAE": "#4c8bb5", "SharedVAE": "#4caf7d"}
+    colors = {"DNA2RNAVAE": "#e07b54", "RNA2DNAVAE": "#4c8bb5", "Shared": "#4caf7d", "SharedVAE": "#9b59b6"}
 
     n_mods = len(results)
     fig, axes = plt.subplots(n_mods, 3, figsize=(14, 4.5 * n_mods))
@@ -313,7 +379,7 @@ def plot_comparison(results: dict, save_path: str):
             ax.set_xticks(range(len(methods)))
             ax.set_xticklabels(methods, rotation=15, ha="right", fontsize=9)
 
-    plt.suptitle("Imputation comparison: DNA2RNAVAE vs RNA2DNAVAE vs SharedVAE", fontsize=12)
+    plt.suptitle("Imputation comparison: DNA2RNAVAE vs RNA2DNAVAE vs Shared vs SharedVAE", fontsize=12)
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches="tight")
     plt.close()
@@ -335,9 +401,11 @@ def parse_args():
     p.add_argument("--rna2dna_id",        default=None,
                    help="run_id for RNA2DNAVAE (reads from latest_rna2dna_run_id.txt if omitted)")
     p.add_argument("--ae_dir",            default="aes_redo_z",
-                   help="Directory with Phase-1 AE checkpoints for SharedVAE")
+                   help="Directory with Phase-1 AE checkpoints for Shared")
     p.add_argument("--shared_ckpt",       default="checkpoints/finetuned/shared_model_ep200.pt",
                    help="Path to shared model checkpoint")
+    p.add_argument("--shared_vae_ckpt",   default="checkpoints/finetuned_vae/shared_model_ep200.pt",
+                   help="Path to SharedVAE model checkpoint")
     p.add_argument("--out",               default="compare_imputation_results.png")
     return p.parse_args()
 
@@ -414,8 +482,15 @@ def main():
     if shared_available:
         model_shared = load_shared(args.ae_dir, args.shared_ckpt, multi_omic_data, device)
     else:
-        print(f"[WARN] Shared model checkpoint not found: {args.shared_ckpt}  — skipping SharedVAE")
+        print(f"[WARN] Shared model checkpoint not found: {args.shared_ckpt}  — skipping Shared")
         model_shared = None
+
+    shared_vae_available = os.path.exists(args.shared_vae_ckpt)
+    if shared_vae_available:
+        model_shared_vae = load_shared_vae(args.ae_dir, args.shared_vae_ckpt, multi_omic_data, device)
+    else:
+        print(f"[WARN] SharedVAE checkpoint not found: {args.shared_vae_ckpt}  — skipping SharedVAE")
+        model_shared_vae = None
 
     # ── Run imputation ───────────────────────────────────────────────────────
 
@@ -432,7 +507,7 @@ def main():
     print(f"  MSE={metrics_r2d['mse']:.4f}  r={metrics_r2d['pearson']:.4f}  ρ={metrics_r2d['spearman']:.4f}  n={metrics_r2d['n']}")
 
     if model_shared is not None:
-        print("\n--- SharedVAE: methylation → RNA (fair cross-modal) ---")
+        print("\n--- Shared: methylation → RNA (fair cross-modal) ---")
         metrics_shared_rna, _ = impute_shared_crossmodal(
             model_shared,
             source_mod="methylation", target_mod="rna",
@@ -441,7 +516,7 @@ def main():
         )
         print(f"  MSE={metrics_shared_rna['mse']:.4f}  r={metrics_shared_rna['pearson']:.4f}  ρ={metrics_shared_rna['spearman']:.4f}  n={metrics_shared_rna['n']}")
 
-        print("\n--- SharedVAE: RNA → methylation (fair cross-modal) ---")
+        print("\n--- Shared: RNA → methylation (fair cross-modal) ---")
         metrics_shared_meth, _ = impute_shared_crossmodal(
             model_shared,
             source_mod="rna", target_mod="methylation",
@@ -449,6 +524,25 @@ def main():
             device=device, batch_size=args.batch_size,
         )
         print(f"  MSE={metrics_shared_meth['mse']:.4f}  r={metrics_shared_meth['pearson']:.4f}  ρ={metrics_shared_meth['spearman']:.4f}  n={metrics_shared_meth['n']}")
+
+    if model_shared_vae is not None:
+        print("\n--- SharedVAE: methylation → RNA (fair cross-modal) ---")
+        metrics_shared_vae_rna, _ = impute_shared_vae_crossmodal(
+            model_shared_vae,
+            source_mod="methylation", target_mod="rna",
+            source_data=meth_corrupted, target_orig=rna_test, target_mask=rna_mask,
+            device=device, batch_size=args.batch_size,
+        )
+        print(f"  MSE={metrics_shared_vae_rna['mse']:.4f}  r={metrics_shared_vae_rna['pearson']:.4f}  ρ={metrics_shared_vae_rna['spearman']:.4f}  n={metrics_shared_vae_rna['n']}")
+
+        print("\n--- SharedVAE: RNA → methylation (fair cross-modal) ---")
+        metrics_shared_vae_meth, _ = impute_shared_vae_crossmodal(
+            model_shared_vae,
+            source_mod="rna", target_mod="methylation",
+            source_data=rna_corrupted, target_orig=meth_test, target_mask=meth_mask,
+            device=device, batch_size=args.batch_size,
+        )
+        print(f"  MSE={metrics_shared_vae_meth['mse']:.4f}  r={metrics_shared_vae_meth['pearson']:.4f}  ρ={metrics_shared_vae_meth['spearman']:.4f}  n={metrics_shared_vae_meth['n']}")
 
     # ── Summary table ────────────────────────────────────────────────────────
     print(f"\n{'='*72}")
@@ -463,8 +557,13 @@ def main():
     ]
     if model_shared is not None:
         rows += [
-            ("rna",         "SharedVAE",   metrics_shared_rna),
-            ("methylation", "SharedVAE",   metrics_shared_meth),
+            ("rna",         "Shared",    metrics_shared_rna),
+            ("methylation", "Shared",    metrics_shared_meth),
+        ]
+    if model_shared_vae is not None:
+        rows += [
+            ("rna",         "SharedVAE", metrics_shared_vae_rna),
+            ("methylation", "SharedVAE", metrics_shared_vae_meth),
         ]
 
     for mod, model_name, m in rows:
@@ -476,8 +575,11 @@ def main():
         "methylation": {"RNA2DNAVAE": metrics_r2d},
     }
     if model_shared is not None:
-        plot_data["rna"]["SharedVAE"]         = metrics_shared_rna
-        plot_data["methylation"]["SharedVAE"] = metrics_shared_meth
+        plot_data["rna"]["Shared"]         = metrics_shared_rna
+        plot_data["methylation"]["Shared"] = metrics_shared_meth
+    if model_shared_vae is not None:
+        plot_data["rna"]["SharedVAE"]         = metrics_shared_vae_rna
+        plot_data["methylation"]["SharedVAE"] = metrics_shared_vae_meth
 
     plot_comparison(plot_data, args.out)
     print(f"\nDone.")
