@@ -29,7 +29,6 @@ class DecoderB(nn.Module):
             nn.Linear(256, 512),
             nn.ReLU(),
             nn.Linear(512, output_dim),
-            nn.Sigmoid()  # Beta-values in range 0-1
         )
 
     def forward(self, z):

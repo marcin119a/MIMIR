@@ -19,11 +19,11 @@ def rna2dna_loss(recon_dna, dna, mu, logvar, beta=1e-3):
     Returns:
         Tuple of (total_loss, reconstruction_loss, kl_divergence)
     """
-    # Reconstruction loss (binary cross-entropy for beta values in [0,1])
-    recon_loss = F.binary_cross_entropy(recon_dna, dna, reduction='sum')
-    
-    # KL Divergence
-    kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    # Reconstruction loss (MSE for Z-score normalised methylation)
+    recon_loss = F.mse_loss(recon_dna, dna, reduction='mean')
+
+    # KL Divergence: mean over batch, sum over latent dim
+    kld = -0.5 * torch.mean(torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1))
     
     total_loss = recon_loss + beta * kld
     
@@ -45,10 +45,10 @@ def dna2rna_loss(recon_rna, rna, mu, logvar, beta=1e-3):
         Tuple of (total_loss, reconstruction_loss, kl_divergence)
     """
     # Reconstruction loss (MSE for RNA expression)
-    recon_loss = F.mse_loss(recon_rna, rna, reduction='sum')
-    
-    # KL Divergence
-    kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    recon_loss = F.mse_loss(recon_rna, rna, reduction='mean')
+
+    # KL Divergence: mean over batch, sum over latent dim
+    kld = -0.5 * torch.mean(torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1))
     
     total_loss = recon_loss + beta * kld
     

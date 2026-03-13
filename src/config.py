@@ -19,7 +19,7 @@ class Config:
     WEIGHT_DECAY = 1e-5
     
     # Loss parameters
-    BETA_START = 1e-3  # KL divergence weight
+    BETA_START = 0.1   # KL divergence weight (after normalization: mean over batch)
     BETA_WARMUP_EPOCHS = 50  # Number of epochs for beta warmup
     GAMMA = 1.0  # Classification loss weight
     
