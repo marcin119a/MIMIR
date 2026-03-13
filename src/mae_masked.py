@@ -504,6 +504,92 @@ def imputation_loss(
 
 
 ###############################################
+# Phase 2b: Shared VAE (variational shared latent space)
+###############################################
+
+class MultiModalWithSharedVAE(nn.Module):
+    """
+    Like MultiModalWithSharedSpace but with a variational (probabilistic) shared space.
+
+    Each modality's hidden state is projected to (mu, logvar) in the shared space.
+    During training: z ~ N(mu, exp(logvar)) via reparameterization.
+    During eval:     z = mu  (deterministic, mean of the distribution).
+
+    Total loss = recon + λ_contrast * contrast + λ_impute * impute + β * KL
+    """
+    def __init__(self,
+                 encoders: Dict[str, ModalityEncoder],
+                 decoders: Dict[str, ModalityDecoder],
+                 hidden_dims: Dict[str, int],
+                 shared_dim: int,
+                 proj_depth: int = 1,
+                 activation_dropout: float = 0.0):
+        super().__init__()
+        self.modalities = list(encoders.keys())
+        self.shared_dim = shared_dim
+
+        self.encoders = nn.ModuleDict(encoders)
+        self.decoders = nn.ModuleDict(decoders)
+
+        self.proj_mu = nn.ModuleDict({
+            m: ProjectionHead(hidden_dims[m], shared_dim, proj_depth, activation_dropout)
+            for m in self.modalities
+        })
+        self.proj_logvar = nn.ModuleDict({
+            m: ProjectionHead(hidden_dims[m], shared_dim, proj_depth, activation_dropout)
+            for m in self.modalities
+        })
+        self.rev_projections = nn.ModuleDict({
+            m: ReverseProjectionHead(shared_dim, hidden_dims[m], proj_depth, activation_dropout)
+            for m in self.modalities
+        })
+
+    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
+        if self.training:
+            std = torch.exp(0.5 * logvar)
+            return mu + torch.randn_like(std) * std
+        return mu
+
+    def forward(self, batch: Dict[str, torch.Tensor]):
+        shared_mus = {}
+        shared_logvars = {}
+        shared_zs = {}
+        reconstructions = {}
+        hidden_states = {}
+
+        for mod, xb in batch.items():
+            h = self.encoders[mod](xb)
+            mu = self.proj_mu[mod](h)
+            logvar = self.proj_logvar[mod](h)
+            z = self.reparameterize(mu, logvar)
+            h_hat = self.rev_projections[mod](z)
+            x_recon = self.decoders[mod](h_hat)
+
+            hidden_states[mod] = h
+            shared_mus[mod] = mu
+            shared_logvars[mod] = logvar
+            shared_zs[mod] = z
+            reconstructions[mod] = x_recon
+
+        return shared_mus, shared_logvars, shared_zs, reconstructions, hidden_states
+
+
+def kl_divergence_loss(
+    mus: Dict[str, torch.Tensor],
+    logvars: Dict[str, torch.Tensor],
+) -> torch.Tensor:
+    """Mean KL(q || N(0,I)) averaged over modalities and batch."""
+    total = 0.0
+    n = 0
+    for mod in mus:
+        mu, logvar = mus[mod], logvars[mod]
+        kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
+        total = total + kl
+        n += 1
+    return total / max(n, 1)
+
+
+###############################################
 # Finetuning loops (shared-space model)
 ###############################################
 
@@ -805,6 +891,166 @@ def prepare_clean_batch(batch: Dict[str, torch.Tensor],
         batch_clean[mod] = x_clean
         orig_missing_masks[mod] = orig_missing
     return batch_clean, orig_missing_masks
+
+###############################################
+# Finetuning loops (shared VAE model)
+###############################################
+
+def finetune_vae_epoch(
+    model: MultiModalWithSharedVAE,
+    dataloader: DataLoader,
+    optimizer,
+    device,
+    mask_values: Dict[str, float],
+    lambda_contrastive: float = 1.0,
+    lambda_impute: float = 1.0,
+    beta: float = 1.0,
+    modality_dropout_prob: float = 0.2,
+    feature_mask_p: float = 0.1,
+    alpha_mask_recon: float = 0.5,
+    grad_clip: float = 1.0,
+    gaussian_noise_std: float = 0.0,
+):
+    model.train()
+    sums = {"total": 0.0, "recon": 0.0, "contrast": 0.0, "impute": 0.0, "kl": 0.0}
+    per_mod_recon_sums, per_mod_impute_sums = {}, {}
+    n = 0
+
+    for batch in dataloader:
+        batch = {k: v.to(device) for k, v in batch.items()}
+        batch = apply_modality_dropout(batch, modality_dropout_prob)
+
+        batch_clean, orig_missing_masks = prepare_clean_batch(batch, mask_values)
+
+        noisy_batch, artificial_masks = apply_feature_mask_noise_with_sentinels(
+            batch_clean, mask_values, feature_mask_p
+        )
+        if gaussian_noise_std > 0.0:
+            noisy_batch = {m: x + torch.randn_like(x) * gaussian_noise_std
+                          for m, x in noisy_batch.items()}
+
+        shared_mus, shared_logvars, shared_zs, recons, _ = model(noisy_batch)
+
+        rloss, per_mod_recon = reconstruction_loss_with_masks(
+            target_batch=batch_clean,
+            reconstructions=recons,
+            orig_missing_masks=orig_missing_masks,
+            artificial_masks=artificial_masks,
+            alpha_mask=alpha_mask_recon,
+        )
+        closs = contrastive_loss(shared_mus)
+        iloss, per_mod_impute = imputation_loss(
+            target_batch=batch_clean,
+            embeddings=shared_mus,
+            model=model,
+            orig_missing_masks=orig_missing_masks,
+        )
+        klloss = kl_divergence_loss(shared_mus, shared_logvars)
+
+        total = rloss + lambda_contrastive * closs + lambda_impute * iloss + beta * klloss
+
+        optimizer.zero_grad()
+        total.backward()
+        if grad_clip > 0.0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+        optimizer.step()
+
+        sums["total"]   += total.item()
+        sums["recon"]   += rloss.item()
+        sums["contrast"] += closs.item()
+        sums["impute"]  += iloss.item()
+        sums["kl"]      += klloss.item()
+
+        for m, v in per_mod_recon.items():
+            per_mod_recon_sums[m] = per_mod_recon_sums.get(m, 0.0) + v.item()
+        for m, v in per_mod_impute.items():
+            per_mod_impute_sums[m] = per_mod_impute_sums.get(m, 0.0) + v.item()
+        n += 1
+
+    avg = {
+        "total_loss":    sums["total"] / max(n, 1),
+        "recon_loss":    sums["recon"] / max(n, 1),
+        "contrast_loss": sums["contrast"] / max(n, 1),
+        "impute_loss":   sums["impute"] / max(n, 1),
+        "kl_loss":       sums["kl"] / max(n, 1),
+        "modality_losses": {
+            "recon":  {m: v / max(n, 1) for m, v in per_mod_recon_sums.items()},
+            "impute": {m: v / max(n, 1) for m, v in per_mod_impute_sums.items()},
+        },
+    }
+    return avg
+
+
+def eval_finetune_vae_epoch(
+    model: MultiModalWithSharedVAE,
+    dataloader: DataLoader,
+    device,
+    mask_values: Dict[str, float],
+    lambda_contrastive: float = 1.0,
+    lambda_impute: float = 1.0,
+    beta: float = 1.0,
+    feature_mask_p: float = 0.0,
+    alpha_mask_recon: float = 0.5,
+):
+    model.eval()
+    sums = {"total": 0.0, "recon": 0.0, "contrast": 0.0, "impute": 0.0, "kl": 0.0}
+    per_mod_recon_sums, per_mod_impute_sums = {}, {}
+    n = 0
+
+    with torch.no_grad():
+        for batch in dataloader:
+            batch = {k: v.to(device) for k, v in batch.items()}
+            batch_clean, orig_missing_masks = prepare_clean_batch(batch, mask_values)
+
+            noisy_batch, artificial_masks = apply_feature_mask_noise_with_sentinels(
+                batch_clean, mask_values, feature_mask_p
+            )
+
+            shared_mus, shared_logvars, shared_zs, recons, _ = model(noisy_batch)
+
+            rloss, per_mod_recon = reconstruction_loss_with_masks(
+                target_batch=batch_clean,
+                reconstructions=recons,
+                orig_missing_masks=orig_missing_masks,
+                artificial_masks=artificial_masks,
+                alpha_mask=alpha_mask_recon,
+            )
+            closs = contrastive_loss(shared_mus)
+            iloss, per_mod_impute = imputation_loss(
+                target_batch=batch_clean,
+                embeddings=shared_mus,
+                model=model,
+                orig_missing_masks=orig_missing_masks,
+            )
+            klloss = kl_divergence_loss(shared_mus, shared_logvars)
+
+            total = rloss + lambda_contrastive * closs + lambda_impute * iloss + beta * klloss
+
+            sums["total"]    += total.item()
+            sums["recon"]    += rloss.item()
+            sums["contrast"] += closs.item()
+            sums["impute"]   += iloss.item()
+            sums["kl"]       += klloss.item()
+
+            for m, v in per_mod_recon.items():
+                per_mod_recon_sums[m] = per_mod_recon_sums.get(m, 0.0) + v.item()
+            for m, v in per_mod_impute.items():
+                per_mod_impute_sums[m] = per_mod_impute_sums.get(m, 0.0) + v.item()
+            n += 1
+
+    avg = {
+        "total_loss":    sums["total"] / max(n, 1),
+        "recon_loss":    sums["recon"] / max(n, 1),
+        "contrast_loss": sums["contrast"] / max(n, 1),
+        "impute_loss":   sums["impute"] / max(n, 1),
+        "kl_loss":       sums["kl"] / max(n, 1),
+        "modality_losses": {
+            "recon":  {m: v / max(n, 1) for m, v in per_mod_recon_sums.items()},
+            "impute": {m: v / max(n, 1) for m, v in per_mod_impute_sums.items()},
+        },
+    }
+    return avg
+
 
 def apply_feature_mask_noise_with_sentinels(
     batch_clean: Dict[str, torch.Tensor],
