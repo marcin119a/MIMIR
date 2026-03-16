@@ -74,7 +74,7 @@ def parse_args():
     p.add_argument("--data",       default="data/tcga_redo_mlomicZ.pkl", help="Path to multi-omic pickle")
     p.add_argument("--splits",     default="data/splits.json",           help="Path to splits JSON (optional)")
     p.add_argument("--ae_dir",     default="aes_redo_z",                 help="Directory with Phase-1 AE checkpoints")
-    p.add_argument("--device",     default=None,                         help="cuda / cpu (auto-detected if omitted)")
+    p.add_argument("--device",     default=None,                         help="cuda / mps / cpu (auto-detected if omitted)")
     p.add_argument("--epochs",     type=int,   default=200)
     p.add_argument("--shared_dim", type=int,   default=256)
     p.add_argument("--batch_size", type=int,   default=64)
@@ -99,7 +99,7 @@ def main():
     args = parse_args()
 
     device = torch.device(
-        args.device if args.device else ("cuda" if torch.cuda.is_available() else "cpu")
+        args.device if args.device else ("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     )
     print(f"Device: {device}\n")
 

@@ -135,7 +135,7 @@ def parse_args():
     p.add_argument("--checkpoint", default="checkpoints/finetuned/shared_model_ep200.pt",
                                                                           help="Shared model checkpoint (.pt)")
     p.add_argument("--out",        default="results/imputation_modality", help="Output directory")
-    p.add_argument("--device",     default=None,                         help="cuda / cpu (auto-detected if omitted)")
+    p.add_argument("--device",     default=None,                         help="cuda / mps / cpu (auto-detected if omitted)")
     p.add_argument("--batch_size", type=int, default=64)
     p.add_argument("--shared_dim", type=int, default=256)
     p.add_argument("--skip_all_possible", action="store_true",
@@ -150,7 +150,7 @@ def main():
     os.makedirs(args.out, exist_ok=True)
 
     device = torch.device(
-        args.device if args.device else ("cuda" if torch.cuda.is_available() else "cpu")
+        args.device if args.device else ("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     )
     print(f"Device: {device}")
 

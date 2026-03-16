@@ -196,7 +196,7 @@ def parse_args():
     p.add_argument("--data",   default="data/tcga_redo_mlomicZ.pkl", help="Path to multi-omic pickle")
     p.add_argument("--splits", default="data/splits.json",           help="Path to splits JSON (optional)")
     p.add_argument("--out",    default="aes_redo_z",            help="Output directory for checkpoints")
-    p.add_argument("--device", default=None,                    help="cuda / cpu (auto-detected if omitted)")
+    p.add_argument("--device", default=None,                    help="cuda / mps / cpu (auto-detected if omitted)")
     return p.parse_args()
 
 
@@ -209,7 +209,7 @@ def main():
     os.makedirs(plot_dir, exist_ok=True)
 
     # Device
-    device = torch.device(args.device if args.device else ("cuda" if torch.cuda.is_available() else "cpu"))
+    device = torch.device(args.device if args.device else ("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"))
     print(f"Device: {device}")
 
     # Load data

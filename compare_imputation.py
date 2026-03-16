@@ -417,7 +417,7 @@ def main():
 
     device = torch.device(
         args.device if args.device
-        else ("cuda" if torch.cuda.is_available() else "cpu")
+        else ("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     )
     print(f"Device: {device}")
 

@@ -81,7 +81,7 @@ def main():
     os.makedirs(args.out, exist_ok=True)
 
     device = torch.device(
-        args.device if args.device else ("cuda" if torch.cuda.is_available() else "cpu")
+        args.device if args.device else ("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     )
     print(f"Device: {device}")
 
