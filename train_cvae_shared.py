@@ -140,11 +140,13 @@ def run_one_experiment(
     val_loader   = get_conditional_dataloader(ds, batch_size=batch_size, shuffle=False, split_idx=val_idx)
 
     # ── Build model ──────────────────────────────────────────────────────────
+    num_classes = condition_matrix.shape[1]
     model = ConditionalMultiModalWithSharedSpace(
         encoders=encoders,
         decoders=decoders,
         hidden_dims=hidden_dims,
         shared_dim=cfg["shared_dim"],
+        num_classes=num_classes,
         proj_depth=cfg["proj_depth"],
         activation_dropout=cfg["proj_activation_dropout"],
     ).to(device)
