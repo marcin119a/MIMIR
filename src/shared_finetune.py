@@ -119,8 +119,8 @@ def run_shared_finetune(
     )
 
     # 6) Train/eval loops with early stopping
-    train_loss_hist = {"total": [], "recon": [], "contrast": [], "impute": []}
-    val_loss_hist   = {"total": [], "recon": [], "contrast": [], "impute": []}
+    train_loss_hist = {"total": [], "recon": [], "contrast": [], "impute": [], "recon_rna": [], "recon_mth": [], "impute_rna": [], "impute_mth": []}
+    val_loss_hist   = {"total": [], "recon": [], "contrast": [], "impute": [], "recon_rna": [], "recon_mth": [], "impute_rna": [], "impute_mth": []}
 
     best_val_total = float("inf")
     best_model_state = None
@@ -163,6 +163,15 @@ def run_shared_finetune(
         ]:
             train_loss_hist[k_dst].append(train_stats[k_src])
             val_loss_hist[k_dst].append(val_stats[k_src])
+
+        train_loss_hist["recon_rna"].append(train_stats.get("modality_losses", {}).get("recon", {}).get("rna", 0.0))
+        val_loss_hist["recon_rna"].append(val_stats.get("modality_losses", {}).get("recon", {}).get("rna", 0.0))
+        train_loss_hist["recon_mth"].append(train_stats.get("modality_losses", {}).get("recon", {}).get("methylation", 0.0))
+        val_loss_hist["recon_mth"].append(val_stats.get("modality_losses", {}).get("recon", {}).get("methylation", 0.0))
+        train_loss_hist["impute_rna"].append(train_stats.get("modality_losses", {}).get("impute", {}).get("rna", 0.0))
+        val_loss_hist["impute_rna"].append(val_stats.get("modality_losses", {}).get("impute", {}).get("rna", 0.0))
+        train_loss_hist["impute_mth"].append(train_stats.get("modality_losses", {}).get("impute", {}).get("methylation", 0.0))
+        val_loss_hist["impute_mth"].append(val_stats.get("modality_losses", {}).get("impute", {}).get("methylation", 0.0))
 
         val_total = val_stats["total_loss"]
         scheduler.step(val_total)
@@ -308,8 +317,8 @@ def run_shared_vae_finetune(
     )
 
     # 6) Training loop
-    train_loss_hist = {"total": [], "recon": [], "contrast": [], "impute": [], "kl": []}
-    val_loss_hist   = {"total": [], "recon": [], "contrast": [], "impute": [], "kl": []}
+    train_loss_hist = {"total": [], "recon": [], "contrast": [], "impute": [], "kl": [], "recon_rna": [], "recon_mth": [], "impute_rna": [], "impute_mth": []}
+    val_loss_hist   = {"total": [], "recon": [], "contrast": [], "impute": [], "kl": [], "recon_rna": [], "recon_mth": [], "impute_rna": [], "impute_mth": []}
 
     best_val_total = float("inf")
     best_model_state = None
@@ -351,6 +360,15 @@ def run_shared_vae_finetune(
         ]:
             train_loss_hist[k_dst].append(train_stats[k_src])
             val_loss_hist[k_dst].append(val_stats[k_src])
+
+        train_loss_hist["recon_rna"].append(train_stats.get("modality_losses", {}).get("recon", {}).get("rna", 0.0))
+        val_loss_hist["recon_rna"].append(val_stats.get("modality_losses", {}).get("recon", {}).get("rna", 0.0))
+        train_loss_hist["recon_mth"].append(train_stats.get("modality_losses", {}).get("recon", {}).get("methylation", 0.0))
+        val_loss_hist["recon_mth"].append(val_stats.get("modality_losses", {}).get("recon", {}).get("methylation", 0.0))
+        train_loss_hist["impute_rna"].append(train_stats.get("modality_losses", {}).get("impute", {}).get("rna", 0.0))
+        val_loss_hist["impute_rna"].append(val_stats.get("modality_losses", {}).get("impute", {}).get("rna", 0.0))
+        train_loss_hist["impute_mth"].append(train_stats.get("modality_losses", {}).get("impute", {}).get("methylation", 0.0))
+        val_loss_hist["impute_mth"].append(val_stats.get("modality_losses", {}).get("impute", {}).get("methylation", 0.0))
 
         val_total = val_stats["total_loss"]
         scheduler.step(val_total)

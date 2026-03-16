@@ -38,29 +38,43 @@ from src.shared_finetune import run_shared_finetune, run_shared_vae_finetune
 # ─── Plotting ─────────────────────────────────────────────────────────────────
 
 def plot_compare_phase2(hist_ae_train, hist_ae_val, hist_vae_train, hist_vae_val, save_path):
-    loss_types = ["total", "recon", "contrast", "impute", "kl"]
+    modalities = ["rna", "mth"]
+    modality_titles = {"rna": "RNA", "mth": "Methylation"}
     
-    fig, axes = plt.subplots(1, len(loss_types), figsize=(4 * len(loss_types), 4.5))
+    col_info = [
+        ("Train Recon MSE",  hist_ae_train, hist_vae_train, "recon"),
+        ("Val Recon MSE",    hist_ae_val,   hist_vae_val,   "recon"),
+        ("Train Impute MSE", hist_ae_train, hist_vae_train, "impute"),
+        ("Val Impute MSE",   hist_ae_val,   hist_vae_val,   "impute"),
+    ]
     
-    for i, lt in enumerate(loss_types):
-        ax = axes[i]
+    fig, axes = plt.subplots(len(modalities), 4, figsize=(20, 4.5 * len(modalities)))
+    if len(modalities) == 1:
+        axes = [axes]
         
-        # AE lines
-        if lt in hist_ae_train and hist_ae_train[lt]:
-            ax.plot(hist_ae_train[lt], label="AE Train", color="#e07b54", linestyle="-")
-            ax.plot(hist_ae_val[lt],   label="AE Val",   color="#e07b54", linestyle="--")
+    for row, mod in enumerate(modalities):
+        for col, (title, hist_ae, hist_vae, metric_prefix) in enumerate(col_info):
+            ax = axes[row][col]
+            metric_key = f"{metric_prefix}_{mod}"
             
-        # VAE lines
-        if lt in hist_vae_train and hist_vae_train[lt]:
-            ax.plot(hist_vae_train[lt], label="VAE Train", color="#4c8bb5", linestyle="-")
-            ax.plot(hist_vae_val[lt],   label="VAE Val",   color="#4c8bb5", linestyle="--")
+            # AE line
+            if metric_key in hist_ae and hist_ae[metric_key]:
+                y_ae = hist_ae[metric_key]
+                best_ae = min(y_ae)
+                ax.plot(range(1, len(y_ae) + 1), y_ae, label=f"Shared AE\nbest={best_ae:.4f}", color="#e07b54", linewidth=1.5)
+                
+            # VAE line
+            if metric_key in hist_vae and hist_vae[metric_key]:
+                y_vae = hist_vae[metric_key]
+                best_vae = min(y_vae)
+                ax.plot(range(1, len(y_vae) + 1), y_vae, label=f"Shared VAE\nbest={best_vae:.4f}", color="#4c8bb5", linewidth=1.5)
 
-        ax.set_title(f"{lt.capitalize()} Loss", fontsize=11)
-        ax.set_xlabel("Epoch", fontsize=10)
-        ax.set_ylabel("Loss", fontsize=10)
-        ax.legend(fontsize=8)
+            ax.set_title(f"{title} ({modality_titles[mod]})", fontsize=11)
+            ax.set_xlabel("Epoch", fontsize=10)
+            ax.set_ylabel("MSE", fontsize=10)
+            ax.legend(fontsize=8)
 
-    plt.suptitle("Phase 2 finetuning: Shared AE vs Shared VAE", y=1.02, fontsize=14)
+    plt.suptitle("Phase 2 Finetuning: AE vs VAE (Modality-wise MSE)", y=1.02, fontsize=14)
     plt.tight_layout()
     plt.savefig(save_path, dpi=120, bbox_inches="tight")
     plt.close()
