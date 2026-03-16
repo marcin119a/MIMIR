@@ -115,7 +115,7 @@ def run_shared_finetune(
         weight_decay=weight_decay
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        opt, mode="min", patience=lr_scheduler_patience, factor=lr_scheduler_factor, verbose=verbose
+        opt, mode="min", patience=lr_scheduler_patience, factor=lr_scheduler_factor
     )
 
     # 6) Train/eval loops with early stopping
@@ -304,7 +304,7 @@ def run_shared_vae_finetune(
         lr=lr, weight_decay=weight_decay
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        opt, mode="min", patience=lr_scheduler_patience, factor=lr_scheduler_factor, verbose=verbose
+        opt, mode="min", patience=lr_scheduler_patience, factor=lr_scheduler_factor
     )
 
     # 6) Training loop
