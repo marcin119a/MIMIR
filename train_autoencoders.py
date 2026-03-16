@@ -18,7 +18,7 @@ matplotlib.use("Agg")  # non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch.optim import Adam
+from torch.optim import AdamW
 
 from src.data_utils import (
     SingleModalityDatasetAligned,
@@ -83,12 +83,15 @@ def train_one_modality(
     name, data_df, common_samples, train_idx, val_idx,
     hidden_layers, n_epochs, mask_value,
     device, out_dir, plot_dir,
-    batch_size=128, lr=1e-3, weight_decay=1e-5,
+    batch_size=128, lr=1e-3, weight_decay=1e-4,
     activation_dropout=0.05, mask_p=0.3,
     l1_alpha=1e-4, alpha_mask=0.5,
+    use_batchnorm=True, grad_clip=1.0,
+    patience=15,
 ):
     print(f"\n{'='*60}")
     print(f"  Training {name} autoencoder  |  epochs={n_epochs}  |  hidden={hidden_layers}")
+    print(f"  batchnorm={use_batchnorm}  grad_clip={grad_clip}  patience={patience}")
     print(f"{'='*60}")
 
     ds = SingleModalityDatasetAligned(data_df, common_samples)
@@ -106,6 +109,7 @@ def train_one_modality(
         "tied":               False,
         "mask_value":         mask_value,
         "loss_on_masked":     True,
+        "use_batchnorm":      use_batchnorm,
     }
 
     ae, _ = build_pretrain_ae_for_modality(
@@ -113,29 +117,57 @@ def train_one_modality(
         activation_dropout=activation_dropout,
         denoising=True, mask_p=mask_p, tied=False,
         mask_value=mask_value, loss_on_masked=True,
+        use_batchnorm=use_batchnorm,
     )
     ae = ae.to(device)
-    opt = Adam(ae.parameters(), lr=lr, weight_decay=weight_decay)
+    opt = AdamW(ae.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=n_epochs, eta_min=lr * 0.01)
 
     tr_overall_h, tr_masked_h, va_overall_h, va_masked_h = [], [], [], []
+
+    best_val_masked = float("inf")
+    best_state = None
+    epochs_no_improve = 0
 
     for ep in range(1, n_epochs + 1):
         tr_loss, tr_overall, tr_masked = pretrain_modality_epoch(
             ae, train_loader, opt, device,
             l1_alpha=l1_alpha, alpha_mask=alpha_mask,
+            grad_clip=grad_clip,
         )
         va_overall, va_masked = eval_modality_epoch_masked(ae, val_loader, device)
+        scheduler.step()
 
         tr_overall_h.append(tr_overall)
         tr_masked_h.append(tr_masked)
         va_overall_h.append(va_overall)
         va_masked_h.append(va_masked)
 
+        # Early stopping based on val masked MSE
+        if va_masked < best_val_masked:
+            best_val_masked = va_masked
+            best_state = {k: v.cpu().clone() for k, v in ae.state_dict().items()}
+            epochs_no_improve = 0
+            marker = " *"
+        else:
+            epochs_no_improve += 1
+            marker = ""
+
         print(
             f"  [{name}] ep {ep:03d} | loss {tr_loss:.4f} | "
             f"overall {tr_overall:.4f} | masked {tr_masked:.4f} | "
             f"val_overall {va_overall:.4f} | val_masked {va_masked:.4f}"
+            f"{marker}"
         )
+
+        if epochs_no_improve >= patience:
+            print(f"  [Early stop] No improvement for {patience} epochs.")
+            break
+
+    # Restore best weights before saving
+    if best_state is not None:
+        ae.load_state_dict({k: v.to(device) for k, v in best_state.items()})
+        print(f"  Restored best model (val_masked={best_val_masked:.4f})")
 
     # Save checkpoint
     ckpt_path = os.path.join(out_dir, f"{name}_ae")
@@ -203,12 +235,12 @@ def main():
         f"train={len(train_idx)} | val={len(val_idx)} | test={len(test_idx)}"
     )
 
-    # ── Per-modality configs (mirror the notebook exactly) ───────────────────
+    # ── Per-modality configs ─────────────────────────────────────────────────
     modality_configs = [
-        dict(name="cnv",         key="cnv",         hidden_layers=[256], n_epochs=60, mask_value=0.0),
-        dict(name="mir",         key="miRNA",        hidden_layers=[128], n_epochs=60, mask_value=0.0),
-        dict(name="rna",         key="rna",          hidden_layers=[512], n_epochs=70, mask_value=0.0),
-        dict(name="mth",         key="methylation",  hidden_layers=[256], n_epochs=60, mask_value=0.0),
+        dict(name="rna",  key="rna",         hidden_layers=[1024, 512], n_epochs=100, mask_value=0.0,
+             use_batchnorm=True, grad_clip=1.0, patience=15),
+        dict(name="mth",  key="methylation", hidden_layers=[512, 256],  n_epochs=100, mask_value=0.0,
+             use_batchnorm=True, grad_clip=1.0, patience=15),
     ]
 
     for cfg in modality_configs:

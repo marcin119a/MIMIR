@@ -175,9 +175,14 @@ def main():
         f"train={len(train_idx)} | val={len(val_idx)} | test={len(test_idx)}"
     )
 
+    # Filter to only the two modalities used in this pipeline
+    ACTIVE_MODALITIES = ["rna", "methylation"]
+    multi_omic_data = {k: v for k, v in multi_omic_data.items() if k in ACTIVE_MODALITIES}
+    print(f"Active modalities: {list(multi_omic_data.keys())}")
+
     # ── 0.2  Load shared model ─────────────────────────────────────────────────
     # Map full modality names → short AE checkpoint names
-    name_map = {"cnv": "cnv", "miRNA": "mir", "rna": "rna", "methylation": "mth"}
+    name_map = {"rna": "rna", "methylation": "mth"}
 
     encoders, decoders, hidden_dims, mask_values = {}, {}, {}, {}
     for mod in multi_omic_data.keys():

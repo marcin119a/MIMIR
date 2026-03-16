@@ -35,6 +35,12 @@ pip install torch torchvision torchaudio \
     --index-url https://download.pytorch.org/whl/cu121 \
     --quiet
 
+
+ssh-keygen -t ed25519 -C "marcin119a@gmail.com"
+cat ~/.ssh/id_ed25519.pub
+
+git remote set-url origin git@github.com:marcin119a/MIMIR.git
+
 # ── 4. Install remaining requirements ─────────────────────────────────────────
 echo "==> Installing project requirements..."
 pip install \

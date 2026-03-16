@@ -106,9 +106,13 @@ def main():
         f"train={len(train_idx)} | val={len(val_idx)} | test={len(test_idx)}"
     )
 
+    # Filter to only the two modalities used in this pipeline
+    ACTIVE_MODALITIES = ["rna", "methylation"]
+    multi_omic_data = {k: v for k, v in multi_omic_data.items() if k in ACTIVE_MODALITIES}
+    print(f"Active modalities: {list(multi_omic_data.keys())}")
+
     # Map modality names to Phase-1 checkpoint paths
-    # Notebook uses short names (cnv, mir, rna, mth) — mirror the same mapping
-    name_map = {"cnv": "cnv", "miRNA": "mir", "rna": "rna", "methylation": "mth"}
+    name_map = {"rna": "rna", "methylation": "mth"}
     model_paths = {}
     for mod in multi_omic_data.keys():
         short = name_map.get(mod, mod)

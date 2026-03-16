@@ -46,8 +46,6 @@ from src.evaluation import evaluate_imputations, compare_methods_per_feature
 
 DISPLAY_NAME = {
     "rna": "mRNA",
-    "miRNA": "miRNA",
-    "cnv": "CNV",
     "methylation": "Methylation",
 }
 
@@ -176,7 +174,7 @@ def plot_frac_better(df_cmp, method_order=None, target_order=None, save_path=Non
     if method_order is None:
         method_order = ["vs TOBMI*", "vs MOFA+"]
     if target_order is None:
-        target_order = ["CNV", "Methylation", "mRNA", "miRNA"]
+        target_order = ["Methylation", "mRNA"]
 
     mat = (
         df_cmp.pivot(index="target_display", columns="method", values="frac_better")
@@ -280,6 +278,11 @@ def main():
         f"Samples: total={len(common_samples)} | "
         f"train={len(train_idx)} | val={len(val_idx)} | test={len(test_idx)}"
     )
+
+    # Filter to only the two modalities used in this pipeline
+    ACTIVE_MODALITIES = ["rna", "methylation"]
+    multi_omic_data = {k: v for k, v in multi_omic_data.items() if k in ACTIVE_MODALITIES}
+    print(f"Active modalities: {list(multi_omic_data.keys())}")
 
     multi_ds = MultiOmicDataset({m: df for m, df in multi_omic_data.items()})
     train_samples = [multi_ds.common_samples[i] for i in train_idx]
