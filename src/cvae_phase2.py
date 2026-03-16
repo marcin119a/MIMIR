@@ -5,11 +5,11 @@ ConditionalMultiModalWithSharedSpace extends MultiModalWithSharedSpace by
 threading the primary-site condition c through encoders and decoders.
 
 Pipeline per modality:
-    x -(encoder(x,c))-> mu -(projection)-> z [shared_dim]
-                                             |
-                         (average/impute combined z)
-                                             |
-    x_recon <-(decoder(h_hat,c))- h_hat <-(rev_projection)- z_combined
+    x -(encoder(x,c))-> mu -(projection(h,c))-> z [shared_dim]
+                                                  |
+                              (average/impute combined z)
+                                                  |
+    x_recon <-(decoder(h_hat,c))- h_hat <-(rev_projection(z,c))- z_combined
 """
 import random
 from typing import Dict, Optional, Tuple
@@ -20,18 +20,57 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from .cvae import CVAEConditionedDecoder, CVAEConditionedEncoder
-from .mae_masked import ProjectionHead, ReverseProjectionHead, apply_modality_dropout
+from .mae_masked import build_mlp, apply_modality_dropout
+
+
+# ─── Conditional projection heads ────────────────────────────────────────────
+
+class ConditionalProjectionHead(nn.Module):
+    """hidden_dim -> shared_dim, conditioned on c via concatenation: [h; c]."""
+
+    def __init__(self, hidden_dim: int, num_classes: int, shared_dim: int,
+                 depth: int = 1, activation_dropout: float = 0.0):
+        super().__init__()
+        in_dim = hidden_dim + num_classes
+        if depth == 1:
+            self.proj = nn.Linear(in_dim, shared_dim)
+        else:
+            dims = [in_dim] + [in_dim] * (depth - 2) + [shared_dim]
+            self.proj = build_mlp(dims, add_final_activation=False,
+                                  activation_dropout=activation_dropout)
+
+    def forward(self, h: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
+        return self.proj(torch.cat([h, c], dim=-1))
+
+
+class ConditionalReverseProjectionHead(nn.Module):
+    """shared_dim -> hidden_dim, conditioned on c via concatenation: [z; c]."""
+
+    def __init__(self, shared_dim: int, num_classes: int, hidden_dim: int,
+                 depth: int = 1, activation_dropout: float = 0.0):
+        super().__init__()
+        in_dim = shared_dim + num_classes
+        if depth == 1:
+            self.rproj = nn.Linear(in_dim, hidden_dim)
+        else:
+            dims = [in_dim] + [in_dim] * (depth - 2) + [hidden_dim]
+            self.rproj = build_mlp(dims, add_final_activation=False,
+                                   activation_dropout=activation_dropout)
+
+    def forward(self, z: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
+        return self.rproj(torch.cat([z, c], dim=-1))
 
 
 # ─── Model ────────────────────────────────────────────────────────────────────
 
 class ConditionalMultiModalWithSharedSpace(nn.Module):
     """
-    Like MultiModalWithSharedSpace but passes condition c to encoders/decoders.
-    Encoders: CVAEConditionedEncoder  — forward(x, c) → mu
-    Decoders: CVAEConditionedDecoder  — forward(z, c) → x_recon
-    Projections and reverse-projections are unconditional (shared latent space
-    is kept condition-free for cross-modal alignment).
+    Like MultiModalWithSharedSpace but passes condition c through the full
+    pipeline: encoders, projections, reverse-projections, and decoders.
+    Encoders:         CVAEConditionedEncoder       — forward(x, c) → mu
+    Projections:      ConditionalProjectionHead    — forward(h, c) → z
+    Rev-projections:  ConditionalReverseProjectionHead — forward(z, c) → h_hat
+    Decoders:         CVAEConditionedDecoder        — forward(h_hat, c) → x_recon
     """
 
     def __init__(
@@ -40,22 +79,26 @@ class ConditionalMultiModalWithSharedSpace(nn.Module):
         decoders: Dict[str, CVAEConditionedDecoder],
         hidden_dims: Dict[str, int],
         shared_dim: int,
+        num_classes: int,
         proj_depth: int = 1,
         activation_dropout: float = 0.0,
     ):
         super().__init__()
         self.modalities = list(encoders.keys())
         self.shared_dim = shared_dim
+        self.num_classes = num_classes
 
         self.encoders = nn.ModuleDict(encoders)
         self.decoders = nn.ModuleDict(decoders)
 
         self.projections = nn.ModuleDict({
-            m: ProjectionHead(hidden_dims[m], shared_dim, proj_depth, activation_dropout)
+            m: ConditionalProjectionHead(hidden_dims[m], num_classes, shared_dim,
+                                         proj_depth, activation_dropout)
             for m in self.modalities
         })
         self.rev_projections = nn.ModuleDict({
-            m: ReverseProjectionHead(shared_dim, hidden_dims[m], proj_depth, activation_dropout)
+            m: ConditionalReverseProjectionHead(shared_dim, num_classes, hidden_dims[m],
+                                                proj_depth, activation_dropout)
             for m in self.modalities
         })
 
@@ -63,23 +106,45 @@ class ConditionalMultiModalWithSharedSpace(nn.Module):
         self,
         batch: Dict[str, torch.Tensor],
         c: torch.Tensor,
-    ) -> Tuple[Dict, Dict, Dict]:
+        return_kl_params: bool = False,
+    ):
         """
         Args:
             batch: {mod: [B, input_dim]}
             c:     [B, num_classes]
+            return_kl_params: if True, also return (mu_dict, logvar_dict) for KL loss
         Returns:
             shared_embeddings, reconstructions, hidden_states
+            [, mu_dict, logvar_dict]  — only when return_kl_params=True
         """
         shared_embeddings, reconstructions, hidden_states = {}, {}, {}
+        mu_dict: Dict[str, torch.Tensor] = {}
+        logvar_dict: Dict[str, Optional[torch.Tensor]] = {}
+
         for mod, xb in batch.items():
-            h = self.encoders[mod](xb, c)
-            z = self.projections[mod](h)
-            h_hat = self.rev_projections[mod](z)
+            enc = self.encoders[mod]
+            if return_kl_params and hasattr(enc, "encode_params"):
+                mu, logvar = enc.encode_params(xb, c)
+                # reparameterise when training and logvar available
+                if self.training and logvar is not None:
+                    std = torch.exp(0.5 * logvar)
+                    h = mu + std * torch.randn_like(std)
+                else:
+                    h = mu
+                mu_dict[mod] = mu
+                logvar_dict[mod] = logvar
+            else:
+                h = enc(xb, c)
+
+            z = self.projections[mod](h, c)
+            h_hat = self.rev_projections[mod](z, c)
             x_recon = self.decoders[mod](h_hat, c)
             hidden_states[mod] = h
             shared_embeddings[mod] = z
             reconstructions[mod] = x_recon
+
+        if return_kl_params:
+            return shared_embeddings, reconstructions, hidden_states, mu_dict, logvar_dict
         return shared_embeddings, reconstructions, hidden_states
 
 
@@ -175,7 +240,7 @@ def _imputation_loss(
         if not other:
             continue
         z_mean = torch.stack([embeddings[m] for m in other]).mean(0)
-        h_hat = model.rev_projections[tgt_mod](z_mean)
+        h_hat = model.rev_projections[tgt_mod](z_mean, c)
         x_imp = model.decoders[tgt_mod](h_hat, c)
         diff_sq = (x_imp - target[tgt_mod]) ** 2
         valid = ~orig_missing[tgt_mod]
@@ -185,6 +250,27 @@ def _imputation_loss(
     if not losses:
         return next(iter(embeddings.values())).new_tensor(0.0), per_mod
     return torch.stack(losses).mean(), per_mod
+
+
+def _kl_loss(
+    mu_dict: Dict[str, torch.Tensor],
+    logvar_dict: Dict[str, Optional[torch.Tensor]],
+) -> torch.Tensor:
+    """
+    KL divergence: KL(q(z|x,c) || N(0,I)) summed over modalities.
+    = -0.5 * mean(1 + logvar - mu^2 - exp(logvar))
+    Only computed for modalities that have a logvar_head.
+    """
+    kls = []
+    for mod, mu in mu_dict.items():
+        logvar = logvar_dict.get(mod)
+        if logvar is None:
+            continue
+        kl = -0.5 * (1.0 + logvar - mu.pow(2) - logvar.exp()).mean()
+        kls.append(kl)
+    if not kls:
+        return next(iter(mu_dict.values())).new_tensor(0.0)
+    return torch.stack(kls).mean()
 
 
 # ─── Training Loops ───────────────────────────────────────────────────────────
@@ -197,6 +283,7 @@ def conditional_finetune_epoch(
     mask_values: Dict[str, float],
     lambda_contrastive: float = 1.0,
     lambda_impute: float = 1.0,
+    lambda_kl: float = 1.0,
     modality_dropout_prob: float = 0.2,
     feature_mask_p: float = 0.1,
     alpha_mask_recon: float = 0.5,
@@ -208,7 +295,7 @@ def conditional_finetune_epoch(
     Dataloader must yield (x_dict, c) batches (ConditionalMultiOmicDataset).
     """
     model.train()
-    sums = {"total": 0.0, "recon": 0.0, "contrast": 0.0, "impute": 0.0}
+    sums = {"total": 0.0, "recon": 0.0, "contrast": 0.0, "impute": 0.0, "kl": 0.0}
     n = 0
 
     for batch_x, batch_c in dataloader:
@@ -223,13 +310,14 @@ def conditional_finetune_epoch(
             noisy = {m: x + torch.randn_like(x) * gaussian_noise_std for m, x in noisy.items()}
 
         optimizer.zero_grad()
-        shared_emb, recons, _ = model(noisy, batch_c)
+        shared_emb, recons, _, mu_dict, logvar_dict = model(noisy, batch_c, return_kl_params=True)
 
         r_loss, _ = _recon_loss(batch_clean, recons, orig_missing, art_masks, alpha_mask_recon)
         c_loss = _contrastive_loss(shared_emb)
         i_loss, _ = _imputation_loss(batch_clean, shared_emb, model, orig_missing, batch_c)
+        kl = _kl_loss(mu_dict, logvar_dict)
 
-        total = r_loss + lambda_contrastive * c_loss + lambda_impute * i_loss
+        total = r_loss + lambda_contrastive * c_loss + lambda_impute * i_loss + lambda_kl * kl
         total.backward()
         if grad_clip > 0.0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
@@ -239,6 +327,7 @@ def conditional_finetune_epoch(
         sums["recon"]    += r_loss.item()
         sums["contrast"] += c_loss.item()
         sums["impute"]   += i_loss.item()
+        sums["kl"]       += kl.item()
         n += 1
 
     avg = max(n, 1)
@@ -247,6 +336,7 @@ def conditional_finetune_epoch(
         "recon_loss":    sums["recon"] / avg,
         "contrast_loss": sums["contrast"] / avg,
         "impute_loss":   sums["impute"] / avg,
+        "kl_loss":       sums["kl"] / avg,
     }
 
 
@@ -258,6 +348,7 @@ def conditional_eval_finetune_epoch(
     mask_values: Dict[str, float],
     lambda_contrastive: float = 1.0,
     lambda_impute: float = 1.0,
+    lambda_kl: float = 1.0,
     feature_mask_p: float = 0.1,
     alpha_mask_recon: float = 0.5,
 ) -> Dict[str, float]:
@@ -266,7 +357,7 @@ def conditional_eval_finetune_epoch(
     Dataloader must yield (x_dict, c) batches.
     """
     model.eval()
-    sums = {"total": 0.0, "recon": 0.0, "contrast": 0.0, "impute": 0.0}
+    sums = {"total": 0.0, "recon": 0.0, "contrast": 0.0, "impute": 0.0, "kl": 0.0}
     n = 0
 
     for batch_x, batch_c in dataloader:
@@ -276,17 +367,19 @@ def conditional_eval_finetune_epoch(
         batch_clean, orig_missing = _prepare_clean_batch(batch_x, mask_values)
         noisy, art_masks = _apply_feature_mask_sentinels(batch_clean, mask_values, feature_mask_p)
 
-        shared_emb, recons, _ = model(noisy, batch_c)
+        shared_emb, recons, _, mu_dict, logvar_dict = model(noisy, batch_c, return_kl_params=True)
 
         r_loss, _ = _recon_loss(batch_clean, recons, orig_missing, art_masks, alpha_mask_recon)
         c_loss = _contrastive_loss(shared_emb)
         i_loss, _ = _imputation_loss(batch_clean, shared_emb, model, orig_missing, batch_c)
+        kl = _kl_loss(mu_dict, logvar_dict)
 
-        total = r_loss + lambda_contrastive * c_loss + lambda_impute * i_loss
+        total = r_loss + lambda_contrastive * c_loss + lambda_impute * i_loss + lambda_kl * kl
         sums["total"]    += total.item()
         sums["recon"]    += r_loss.item()
         sums["contrast"] += c_loss.item()
         sums["impute"]   += i_loss.item()
+        sums["kl"]       += kl.item()
         n += 1
 
     avg = max(n, 1)
@@ -295,4 +388,5 @@ def conditional_eval_finetune_epoch(
         "recon_loss":    sums["recon"] / avg,
         "contrast_loss": sums["contrast"] / avg,
         "impute_loss":   sums["impute"] / avg,
+        "kl_loss":       sums["kl"] / avg,
     }

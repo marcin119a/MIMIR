@@ -322,21 +322,41 @@ def eval_cvae_epoch_masked(
 
 class CVAEConditionedEncoder(nn.Module):
     """
-    Wraps trained CVAE backbone + mu_head.
-    forward(x, c=None) → mu  (deterministic encoder)
+    Wraps trained CVAE backbone + mu_head (+ optional logvar_head).
+    forward(x, c=None) → z
+      - training + logvar_head present: reparameterised sample
+      - otherwise: mu (deterministic)
+    encode_params(x, c=None) → (mu, logvar | None)  — for KL computation
     If c is None, a zero-condition vector is used as fallback.
     """
-    def __init__(self, backbone: nn.Module, mu_head: nn.Linear, num_classes: int):
+    def __init__(self, backbone: nn.Module, mu_head: nn.Linear, num_classes: int,
+                 logvar_head: Optional[nn.Linear] = None):
         super().__init__()
         self.backbone = backbone
         self.mu_head = mu_head
+        self.logvar_head = logvar_head
         self.num_classes = num_classes
 
-    def forward(self, x: torch.Tensor, c: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def _backbone_out(self, x: torch.Tensor, c: Optional[torch.Tensor]) -> torch.Tensor:
         if c is None:
             c = torch.zeros(x.size(0), self.num_classes, device=x.device, dtype=x.dtype)
-        xc = torch.cat([x, c], dim=-1)
-        return self.mu_head(self.backbone(xc))
+        return self.backbone(torch.cat([x, c], dim=-1))
+
+    def encode_params(
+        self, x: torch.Tensor, c: Optional[torch.Tensor] = None
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """Returns (mu, logvar). logvar is None when logvar_head is not available."""
+        h = self._backbone_out(x, c)
+        mu = self.mu_head(h)
+        logvar = self.logvar_head(h) if self.logvar_head is not None else None
+        return mu, logvar
+
+    def forward(self, x: torch.Tensor, c: Optional[torch.Tensor] = None) -> torch.Tensor:
+        mu, logvar = self.encode_params(x, c)
+        if self.training and logvar is not None:
+            std = torch.exp(0.5 * logvar)
+            return mu + std * torch.randn_like(std)
+        return mu
 
 
 class CVAEConditionedDecoder(nn.Module):
@@ -364,7 +384,8 @@ def extract_encoder_decoder_from_cvae(
     Extract (encoder, decoder) wrappers from a trained ModalityCVAE.
     Drop-in for use in ConditionalMultiModalWithSharedSpace.
     """
-    enc = CVAEConditionedEncoder(cvae.backbone, cvae.mu_head, cvae.num_classes)
+    enc = CVAEConditionedEncoder(cvae.backbone, cvae.mu_head, cvae.num_classes,
+                                  logvar_head=cvae.logvar_head)
     dec = CVAEConditionedDecoder(cvae.decoder, cvae.num_classes)
     return enc, dec
 
