@@ -2,7 +2,7 @@
 set -e
 
 FOLDER_ID="1340tEG3_bL9ojHJ8hQmMkBoZ9dSKYUhV"
-DEST_DIR="$(dirname "$0")/data"
+DEST_DIR="$(dirname "$0")/../data"
 
 mkdir -p "$DEST_DIR"
 
