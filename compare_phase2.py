@@ -33,19 +33,21 @@ from src.data_utils import (
     load_shared_splits_from_json,
 )
 from src.shared_finetune import run_shared_finetune, run_shared_vae_finetune
+from src.cvae import load_conditions_from_json
+from train_cvae_shared import build_config as cvae_build_config, run_one_experiment as cvae_run_one_experiment
 
 
 # ─── Plotting ─────────────────────────────────────────────────────────────────
 
-def plot_compare_phase2(hist_ae_train, hist_ae_val, hist_vae_train, hist_vae_val, save_path):
+def plot_compare_phase2(hist_ae_train, hist_ae_val, hist_vae_train, hist_vae_val, hist_cvae_train, hist_cvae_val, save_path):
     modalities = ["rna", "mth"]
     modality_titles = {"rna": "RNA", "mth": "Methylation"}
     
     col_info = [
-        ("Train Recon MSE",  hist_ae_train, hist_vae_train, "recon"),
-        ("Val Recon MSE",    hist_ae_val,   hist_vae_val,   "recon"),
-        ("Train Impute MSE", hist_ae_train, hist_vae_train, "impute"),
-        ("Val Impute MSE",   hist_ae_val,   hist_vae_val,   "impute"),
+        ("Train Recon MSE",  hist_ae_train, hist_vae_train, hist_cvae_train, "recon"),
+        ("Val Recon MSE",    hist_ae_val,   hist_vae_val,   hist_cvae_val,   "recon"),
+        ("Train Impute MSE", hist_ae_train, hist_vae_train, hist_cvae_train, "impute"),
+        ("Val Impute MSE",   hist_ae_val,   hist_vae_val,   hist_cvae_val,   "impute"),
     ]
     
     fig, axes = plt.subplots(len(modalities), 4, figsize=(20, 4.5 * len(modalities)))
@@ -53,7 +55,7 @@ def plot_compare_phase2(hist_ae_train, hist_ae_val, hist_vae_train, hist_vae_val
         axes = [axes]
         
     for row, mod in enumerate(modalities):
-        for col, (title, hist_ae, hist_vae, metric_prefix) in enumerate(col_info):
+        for col, (title, hist_ae, hist_vae, hist_cvae, metric_prefix) in enumerate(col_info):
             ax = axes[row][col]
             metric_key = f"{metric_prefix}_{mod}"
             
@@ -69,12 +71,18 @@ def plot_compare_phase2(hist_ae_train, hist_ae_val, hist_vae_train, hist_vae_val
                 best_vae = min(y_vae)
                 ax.plot(range(1, len(y_vae) + 1), y_vae, label=f"Shared VAE\nbest={best_vae:.4f}", color="#4c8bb5", linewidth=1.5)
 
+            # CVAE line
+            if metric_key in hist_cvae and hist_cvae[metric_key]:
+                y_cvae = hist_cvae[metric_key]
+                best_cvae = min(y_cvae)
+                ax.plot(range(1, len(y_cvae) + 1), y_cvae, label=f"Cond. Shared VAE\nbest={best_cvae:.4f}", color="#4cb55c", linewidth=1.5)
+
             ax.set_title(f"{title} ({modality_titles[mod]})", fontsize=11)
             ax.set_xlabel("Epoch", fontsize=10)
             ax.set_ylabel("MSE", fontsize=10)
             ax.legend(fontsize=8)
 
-    plt.suptitle("Phase 2 Finetuning: AE vs VAE (Modality-wise MSE)", y=1.02, fontsize=14)
+    plt.suptitle("Phase 2 Finetuning: AE vs VAE vs CVAE (Modality-wise MSE)", y=1.02, fontsize=14)
     plt.tight_layout()
     plt.savefig(save_path, dpi=120, bbox_inches="tight")
     plt.close()
@@ -87,7 +95,9 @@ def parse_args():
     p = argparse.ArgumentParser(description="Phase 2 Comparison: Shared AE vs Shared VAE")
     p.add_argument("--data",       default="data/tcga_redo_mlomicZ.pkl", help="Path to multi-omic pickle")
     p.add_argument("--splits",     default="data/splits.json",           help="Path to splits JSON (optional)")
+    p.add_argument("--primary_sites", default="data/primary_sites.json", help="Path to primary sites JSON")
     p.add_argument("--ae_dir",     default="aes_redo_z",                 help="Directory with Phase-1 AE checkpoints")
+    p.add_argument("--cvae_dir",   default="cvae_phase1",                help="Directory with Phase-1 CVAE checkpoints")
     p.add_argument("--device",     default=None,                         help="cuda / mps / cpu (auto-detected if omitted)")
     p.add_argument("--epochs",     type=int,   default=200)
     p.add_argument("--shared_dim", type=int,   default=256)
@@ -144,12 +154,19 @@ def main():
         f"train={len(train_idx)} | val={len(val_idx)} | test={len(test_idx)}\n"
     )
 
+    # Load primary sites
+    condition_matrix, class_names = load_conditions_from_json(args.primary_sites, common_samples)
+    num_classes = len(class_names)
+    print(f"Primary sites: {num_classes} classes")
+
     # Map modality names to Phase-1 checkpoint paths
     name_map = {"rna": "rna", "methylation": "mth"}
     model_paths = {}
+    cvae_paths = {}
     for mod in multi_omic_data.keys():
         short = name_map.get(mod, mod)
         model_paths[mod] = os.path.join(args.ae_dir, f"{short}_ae.pt")
+        cvae_paths[mod] = os.path.join(args.cvae_dir, f"{short}_cvae.pt")
 
     print("AE checkpoint paths:")
     for mod, path in model_paths.items():
@@ -162,7 +179,7 @@ def main():
     # 1. RUN SHARED AE
     # =========================================================================
     print(f"\n{'='*78}")
-    print("  [1/2] RUNNING SHARED AE FINETUNING")
+    print("  [1/3] RUNNING SHARED AE FINETUNING")
     print(f"{'='*78}")
     t0_ae = time.time()
     _, train_hist_ae, val_hist_ae, _, _, _, _ = run_shared_finetune(
@@ -195,7 +212,7 @@ def main():
     # 2. RUN SHARED VAE
     # =========================================================================
     print(f"\n{'='*78}")
-    print("  [2/2] RUNNING SHARED VAE FINETUNING")
+    print("  [2/3] RUNNING SHARED VAE FINETUNING")
     print(f"{'='*78}")
     t0_vae = time.time()
     _, train_hist_vae, val_hist_vae, _, _, _, _ = run_shared_vae_finetune(
@@ -226,7 +243,43 @@ def main():
     time_vae = time.time() - t0_vae
 
     # =========================================================================
-    # 3. PLOT AND SUMMARY
+    # 3. RUN CONDITIONAL SHARED VAE
+    # =========================================================================
+    print(f"\n{'='*78}")
+    print("  [3/3] RUNNING CONDITIONAL SHARED VAE FINETUNING")
+    print(f"{'='*78}")
+    t0_cvae = time.time()
+    cvae_cfg = cvae_build_config({
+        "shared_dim": args.shared_dim,
+        "lr": args.lr,
+        "weight_decay": args.weight_decay,
+        "lambda_contrast": args.lambda_contrast,
+        "lambda_impute": args.lambda_impute,
+        "modality_dropout_prob": args.modality_dropout_prob,
+        "feature_mask_p_train": args.feature_mask_p,
+        "feature_mask_p_val": args.feature_mask_p,
+        "alpha_mask_recon": args.alpha_mask_recon,
+    })
+    cvae_result = cvae_run_one_experiment(
+        exp_name="compare_cvae",
+        cfg=cvae_cfg,
+        multi_omic_data=multi_omic_data,
+        common_samples=common_samples,
+        condition_matrix=condition_matrix,
+        train_idx=train_idx,
+        val_idx=val_idx,
+        cvae_paths=cvae_paths,
+        device=device,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        out_root="tmp_cvae_compare",
+    )
+    time_cvae = time.time() - t0_cvae
+    train_hist_cvae = cvae_result.get("train_hist", {})
+    val_hist_cvae = cvae_result.get("val_hist", {})
+
+    # =========================================================================
+    # 4. PLOT AND SUMMARY
     # =========================================================================
     
     plot_compare_phase2(
@@ -234,6 +287,8 @@ def main():
         hist_ae_val=val_hist_ae,
         hist_vae_train=train_hist_vae,
         hist_vae_val=val_hist_vae,
+        hist_cvae_train=train_hist_cvae,
+        hist_cvae_val=val_hist_cvae,
         save_path=args.out
     )
 
@@ -249,6 +304,7 @@ def main():
 
     print(f"{'Shared AE':<14} {get_best(val_hist_ae, 'total'):>16.4f} {get_best(val_hist_ae, 'recon'):>16.4f} {get_best(val_hist_ae, 'impute'):>16.4f} {args.epochs:>7} {time_ae:>8.1f}")
     print(f"{'Shared VAE':<14} {get_best(val_hist_vae, 'total'):>16.4f} {get_best(val_hist_vae, 'recon'):>16.4f} {get_best(val_hist_vae, 'impute'):>16.4f} {args.epochs:>7} {time_vae:>8.1f}")
+    print(f"{'Cond. VAE':<14} {get_best(val_hist_cvae, 'total'):>16.4f} {get_best(val_hist_cvae, 'recon'):>16.4f} {get_best(val_hist_cvae, 'impute'):>16.4f} {args.epochs:>7} {time_cvae:>8.1f}")
     print("=" * 78)
 
 
