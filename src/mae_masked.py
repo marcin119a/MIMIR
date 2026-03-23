@@ -434,7 +434,7 @@ def reconstruction_loss_with_masks(
     return total, per_mod_loss
 
 
-def contrastive_loss(embeddings: Dict[str, torch.Tensor], temperature: float=0.1):
+def contrastive_loss(embeddings: Dict[str, torch.Tensor], temperature: float=0.1, margin: float=1.0, hard_negative_weight: float=1.0):
     mods = list(embeddings.keys())
     if len(mods) < 2:
         any_tensor = next(iter(embeddings.values()))
@@ -446,12 +446,42 @@ def contrastive_loss(embeddings: Dict[str, torch.Tensor], temperature: float=0.1
         for j in range(i+1, len(mods)):
             z1 = embeddings[mods[i]]
             z2 = embeddings[mods[j]]
-            sim_ab = F.cosine_similarity(z1.unsqueeze(1), z2.unsqueeze(0), dim=-1) / temperature
-            labels = torch.arange(z1.size(0), device=z1.device)
-            loss += F.cross_entropy(sim_ab, labels)
+            batch_size = z1.size(0)
 
-            sim_ba = F.cosine_similarity(z2.unsqueeze(1), z1.unsqueeze(0), dim=-1) / temperature
-            loss += F.cross_entropy(sim_ba, labels)
+            # Normalize embeddings for cosine sim / distance
+            z1_norm = F.normalize(z1, dim=-1)
+            z2_norm = F.normalize(z2, dim=-1)
+
+            # Pairwise cosine similarity [N, N]
+            sim = torch.matmul(z1_norm, z2_norm.T)
+
+            # 1. NT-Xent (InfoNCE) Loss
+            sim_ij = sim / temperature
+            sim_ji = sim.T / temperature
+            labels = torch.arange(batch_size, device=z1.device)
+            loss_ntx_ij = F.cross_entropy(sim_ij, labels)
+            loss_ntx_ji = F.cross_entropy(sim_ji, labels)
+
+            # 2. Triplet Loss with Hard Negative Mining
+            # Distance metric: 1 - cosine similarity
+            dist = 1.0 - sim
+            pos_dist = torch.diag(dist)
+
+            # Hard negatives for z1 -> z2 (mask out diagonal positives)
+            mask = torch.eye(batch_size, dtype=torch.bool, device=z1.device)
+            dist_excl_pos_12 = dist.clone()
+            dist_excl_pos_12[mask] = float('inf')
+            hard_neg_dist_12, _ = dist_excl_pos_12.min(dim=1)
+            triplet_loss_12 = F.relu(pos_dist - hard_neg_dist_12 + margin).mean()
+
+            # Hard negatives for z2 -> z1 (transpose distance matrix)
+            dist_excl_pos_21 = dist.T.clone()
+            dist_excl_pos_21[mask] = float('inf')
+            hard_neg_dist_21, _ = dist_excl_pos_21.min(dim=1)
+            triplet_loss_21 = F.relu(pos_dist - hard_neg_dist_21 + margin).mean()
+
+            # Combine objectives
+            loss += loss_ntx_ij + loss_ntx_ji + hard_negative_weight * (triplet_loss_12 + triplet_loss_21)
             count += 2
     return loss / max(count, 1)
 

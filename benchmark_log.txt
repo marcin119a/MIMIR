@@ -1,0 +1,892 @@
+===========================================
+   STARTING MULTI-VARIANT BENCHMARKING     
+===========================================
+>> Setting hard_negative_weight to 0.0 in src/mae_masked.py
+[1/6] Training Baseline Shared AE...
+Device: mps
+Loading data from data/tcga_redo_mlomicZ.pkl …
+Modalities: ['cnv', 'miRNA', 'rna', 'methylation']
+Loading splits from data/splits.json …
+Samples: total=8034 | train=6409 | val=798 | test=800
+Active modalities: ['rna', 'methylation']
+AE checkpoint paths:
+  [OK] rna: aes_redo_z/rna_ae.pt
+  [OK] methylation: aes_redo_z/mth_ae.pt
+[Finetune] ep 001 | train tot 1.7671 | recon 0.7692 | contr 0.6564 | impute 0.3415
+                 |   val  tot 2.0806 | recon 0.7488 | contr 0.8600 | impute 0.4719
+[Finetune] ep 002 | train tot 0.9493 | recon 0.5260 | contr 0.1912 | impute 0.2321
+                 |   val  tot 1.7097 | recon 0.6646 | contr 0.6236 | impute 0.4215
+[Finetune] ep 003 | train tot 0.7476 | recon 0.4514 | contr 0.1180 | impute 0.1782
+                 |   val  tot 1.5893 | recon 0.6387 | contr 0.5398 | impute 0.4108
+[Finetune] ep 004 | train tot 0.7957 | recon 0.4622 | contr 0.1226 | impute 0.2108
+                 |   val  tot 1.5124 | recon 0.6220 | contr 0.4904 | impute 0.4001
+[Finetune] ep 005 | train tot 0.7602 | recon 0.4481 | contr 0.1067 | impute 0.2054
+                 |   val  tot 1.4695 | recon 0.6132 | contr 0.4595 | impute 0.3968
+[Finetune] ep 006 | train tot 0.7676 | recon 0.4501 | contr 0.1014 | impute 0.2161
+                 |   val  tot 1.4284 | recon 0.6060 | contr 0.4313 | impute 0.3911
+[Finetune] ep 007 | train tot 0.5755 | recon 0.3812 | contr 0.0611 | impute 0.1332
+                 |   val  tot 1.4158 | recon 0.6005 | contr 0.4249 | impute 0.3904
+[Finetune] ep 008 | train tot 0.7630 | recon 0.4470 | contr 0.0950 | impute 0.2210
+                 |   val  tot 1.3895 | recon 0.5978 | contr 0.4054 | impute 0.3863
+[Finetune] ep 009 | train tot 0.7519 | recon 0.4422 | contr 0.0908 | impute 0.2190
+                 |   val  tot 1.3632 | recon 0.5948 | contr 0.3851 | impute 0.3833
+[Finetune] ep 010 | train tot 0.6694 | recon 0.4156 | contr 0.0688 | impute 0.1851
+                 |   val  tot 1.3415 | recon 0.5926 | contr 0.3677 | impute 0.3812
+[Finetune] ep 011 | train tot 0.6680 | recon 0.4146 | contr 0.0663 | impute 0.1871
+                 |   val  tot 1.3279 | recon 0.5895 | contr 0.3572 | impute 0.3812
+[Finetune] ep 012 | train tot 0.6399 | recon 0.4039 | contr 0.0620 | impute 0.1740
+                 |   val  tot 1.3383 | recon 0.5883 | contr 0.3689 | impute 0.3810
+[Finetune] ep 013 | train tot 0.6492 | recon 0.4084 | contr 0.0609 | impute 0.1799
+                 |   val  tot 1.3173 | recon 0.5865 | contr 0.3530 | impute 0.3778
+[Finetune] ep 014 | train tot 0.6565 | recon 0.4110 | contr 0.0621 | impute 0.1834
+                 |   val  tot 1.3181 | recon 0.5874 | contr 0.3518 | impute 0.3789
+[Finetune] ep 015 | train tot 0.6113 | recon 0.3945 | contr 0.0514 | impute 0.1654
+                 |   val  tot 1.3017 | recon 0.5859 | contr 0.3396 | impute 0.3762
+[Finetune] ep 016 | train tot 0.6319 | recon 0.4015 | contr 0.0563 | impute 0.1742
+                 |   val  tot 1.2952 | recon 0.5846 | contr 0.3344 | impute 0.3762
+[Finetune] ep 017 | train tot 0.6759 | recon 0.4200 | contr 0.0589 | impute 0.1970
+                 |   val  tot 1.2859 | recon 0.5844 | contr 0.3246 | impute 0.3769
+[Finetune] ep 018 | train tot 0.6104 | recon 0.3936 | contr 0.0500 | impute 0.1669
+                 |   val  tot 1.2876 | recon 0.5824 | contr 0.3289 | impute 0.3762
+[Finetune] ep 019 | train tot 0.6254 | recon 0.4021 | contr 0.0487 | impute 0.1746
+                 |   val  tot 1.2825 | recon 0.5832 | contr 0.3229 | impute 0.3764
+[Finetune] ep 020 | train tot 0.6561 | recon 0.4140 | contr 0.0528 | impute 0.1893
+                 |   val  tot 1.2714 | recon 0.5814 | contr 0.3153 | impute 0.3746
+[Finetune] ep 021 | train tot 0.6582 | recon 0.4147 | contr 0.0523 | impute 0.1911
+                 |   val  tot 1.2678 | recon 0.5817 | contr 0.3128 | impute 0.3733
+[Finetune] ep 022 | train tot 0.6328 | recon 0.4058 | contr 0.0475 | impute 0.1795
+                 |   val  tot 1.2782 | recon 0.5823 | contr 0.3220 | impute 0.3739
+[Finetune] ep 023 | train tot 0.5872 | recon 0.3877 | contr 0.0422 | impute 0.1573
+                 |   val  tot 1.2616 | recon 0.5817 | contr 0.3074 | impute 0.3726
+[Finetune] ep 024 | train tot 0.6731 | recon 0.4225 | contr 0.0511 | impute 0.1995
+                 |   val  tot 1.2663 | recon 0.5816 | contr 0.3085 | impute 0.3761
+[Finetune] ep 025 | train tot 0.6533 | recon 0.4144 | contr 0.0491 | impute 0.1899
+                 |   val  tot 1.2657 | recon 0.5813 | contr 0.3097 | impute 0.3746
+[Finetune] ep 026 | train tot 0.5746 | recon 0.3845 | contr 0.0379 | impute 0.1521
+                 |   val  tot 1.2452 | recon 0.5786 | contr 0.2942 | impute 0.3724
+[Finetune] ep 027 | train tot 0.5484 | recon 0.3733 | contr 0.0330 | impute 0.1421
+                 |   val  tot 1.2533 | recon 0.5801 | contr 0.3015 | impute 0.3716
+[Finetune] ep 028 | train tot 0.5989 | recon 0.3937 | contr 0.0395 | impute 0.1658
+                 |   val  tot 1.2511 | recon 0.5783 | contr 0.3004 | impute 0.3724
+[Finetune] ep 029 | train tot 0.6337 | recon 0.4067 | contr 0.0469 | impute 0.1802
+                 |   val  tot 1.2555 | recon 0.5792 | contr 0.3036 | impute 0.3727
+[Finetune] ep 030 | train tot 0.6491 | recon 0.4132 | contr 0.0464 | impute 0.1896
+                 |   val  tot 1.2377 | recon 0.5791 | contr 0.2882 | impute 0.3704
+[Finetune] ep 031 | train tot 0.6058 | recon 0.3981 | contr 0.0383 | impute 0.1693
+                 |   val  tot 1.2367 | recon 0.5792 | contr 0.2875 | impute 0.3701
+[Finetune] ep 032 | train tot 0.6257 | recon 0.4065 | contr 0.0392 | impute 0.1800
+                 |   val  tot 1.2401 | recon 0.5793 | contr 0.2889 | impute 0.3719
+[Finetune] ep 033 | train tot 0.5668 | recon 0.3833 | contr 0.0326 | impute 0.1509
+                 |   val  tot 1.2369 | recon 0.5781 | contr 0.2875 | impute 0.3713
+[Finetune] ep 034 | train tot 0.6096 | recon 0.4001 | contr 0.0381 | impute 0.1715
+                 |   val  tot 1.2437 | recon 0.5795 | contr 0.2916 | impute 0.3727
+[Finetune] ep 035 | train tot 0.5913 | recon 0.3914 | contr 0.0375 | impute 0.1624
+                 |   val  tot 1.2328 | recon 0.5772 | contr 0.2844 | impute 0.3712
+[Finetune] ep 036 | train tot 0.5487 | recon 0.3752 | contr 0.0308 | impute 0.1426
+                 |   val  tot 1.2342 | recon 0.5777 | contr 0.2853 | impute 0.3712
+[Finetune] ep 037 | train tot 0.6173 | recon 0.4018 | contr 0.0400 | impute 0.1756
+                 |   val  tot 1.2397 | recon 0.5787 | contr 0.2895 | impute 0.3715
+[Finetune] ep 038 | train tot 0.6172 | recon 0.4030 | contr 0.0370 | impute 0.1773
+                 |   val  tot 1.2411 | recon 0.5797 | contr 0.2897 | impute 0.3717
+[Finetune] ep 039 | train tot 0.5726 | recon 0.3873 | contr 0.0303 | impute 0.1549
+                 |   val  tot 1.2338 | recon 0.5785 | contr 0.2843 | impute 0.3709
+[Finetune] ep 040 | train tot 0.6046 | recon 0.3999 | contr 0.0332 | impute 0.1715
+                 |   val  tot 1.2281 | recon 0.5774 | contr 0.2787 | impute 0.3720
+[Finetune] ep 041 | train tot 0.6323 | recon 0.4102 | contr 0.0378 | impute 0.1843
+                 |   val  tot 1.2397 | recon 0.5780 | contr 0.2901 | impute 0.3715
+[Finetune] ep 042 | train tot 0.5719 | recon 0.3849 | contr 0.0310 | impute 0.1560
+                 |   val  tot 1.2241 | recon 0.5772 | contr 0.2757 | impute 0.3712
+[Finetune] ep 043 | train tot 0.5724 | recon 0.3875 | contr 0.0297 | impute 0.1552
+                 |   val  tot 1.2222 | recon 0.5779 | contr 0.2743 | impute 0.3699
+[Finetune] ep 044 | train tot 0.5570 | recon 0.3805 | contr 0.0283 | impute 0.1482
+                 |   val  tot 1.2345 | recon 0.5770 | contr 0.2862 | impute 0.3714
+[Finetune] ep 045 | train tot 0.5654 | recon 0.3807 | contr 0.0295 | impute 0.1552
+                 |   val  tot 1.2328 | recon 0.5787 | contr 0.2827 | impute 0.3714
+[Finetune] ep 046 | train tot 0.6070 | recon 0.4000 | contr 0.0341 | impute 0.1729
+                 |   val  tot 1.2332 | recon 0.5772 | contr 0.2857 | impute 0.3703
+[Finetune] ep 047 | train tot 0.5845 | recon 0.3947 | contr 0.0289 | impute 0.1609
+                 |   val  tot 1.2237 | recon 0.5761 | contr 0.2776 | impute 0.3701
+[Finetune] ep 048 | train tot 0.5272 | recon 0.3677 | contr 0.0247 | impute 0.1349
+                 |   val  tot 1.2295 | recon 0.5770 | contr 0.2822 | impute 0.3703
+[Finetune] ep 049 | train tot 0.5564 | recon 0.3794 | contr 0.0267 | impute 0.1503
+                 |   val  tot 1.2344 | recon 0.5769 | contr 0.2870 | impute 0.3706
+[Finetune] ep 050 | train tot 0.6151 | recon 0.4035 | contr 0.0349 | impute 0.1766
+                 |   val  tot 1.2329 | recon 0.5768 | contr 0.2864 | impute 0.3697
+[Finetune] ep 051 | train tot 0.5366 | recon 0.3732 | contr 0.0252 | impute 0.1381
+                 |   val  tot 1.2261 | recon 0.5766 | contr 0.2791 | impute 0.3704
+[Finetune] ep 052 | train tot 0.5999 | recon 0.3981 | contr 0.0309 | impute 0.1710
+                 |   val  tot 1.2223 | recon 0.5765 | contr 0.2759 | impute 0.3700
+[Finetune] ep 053 | train tot 0.5720 | recon 0.3896 | contr 0.0268 | impute 0.1556
+                 |   val  tot 1.2158 | recon 0.5770 | contr 0.2700 | impute 0.3688
+[Finetune] ep 054 | train tot 0.5420 | recon 0.3763 | contr 0.0255 | impute 0.1402
+                 |   val  tot 1.2207 | recon 0.5754 | contr 0.2744 | impute 0.3709
+[Finetune] ep 055 | train tot 0.5424 | recon 0.3753 | contr 0.0247 | impute 0.1423
+                 |   val  tot 1.2151 | recon 0.5765 | contr 0.2680 | impute 0.3707
+[Finetune] ep 056 | train tot 0.5538 | recon 0.3788 | contr 0.0271 | impute 0.1478
+                 |   val  tot 1.2112 | recon 0.5760 | contr 0.2656 | impute 0.3697
+[Finetune] ep 057 | train tot 0.5860 | recon 0.3952 | contr 0.0280 | impute 0.1628
+                 |   val  tot 1.2187 | recon 0.5762 | contr 0.2737 | impute 0.3688
+[Finetune] ep 058 | train tot 0.5473 | recon 0.3793 | contr 0.0242 | impute 0.1438
+                 |   val  tot 1.2149 | recon 0.5779 | contr 0.2685 | impute 0.3686
+[Finetune] ep 059 | train tot 0.5948 | recon 0.3987 | contr 0.0278 | impute 0.1684
+                 |   val  tot 1.2126 | recon 0.5750 | contr 0.2696 | impute 0.3680
+[Finetune] ep 060 | train tot 0.6019 | recon 0.4017 | contr 0.0291 | impute 0.1711
+                 |   val  tot 1.2302 | recon 0.5788 | contr 0.2809 | impute 0.3704
+[Finetune] ep 061 | train tot 0.5802 | recon 0.3924 | contr 0.0274 | impute 0.1603
+                 |   val  tot 1.2263 | recon 0.5776 | contr 0.2797 | impute 0.3691
+[Finetune] ep 062 | train tot 0.5942 | recon 0.3985 | contr 0.0289 | impute 0.1668
+                 |   val  tot 1.2307 | recon 0.5777 | contr 0.2827 | impute 0.3703
+[Finetune] ep 063 | train tot 0.5775 | recon 0.3935 | contr 0.0256 | impute 0.1584
+                 |   val  tot 1.2189 | recon 0.5764 | contr 0.2735 | impute 0.3690
+[Finetune] ep 064 | train tot 0.6046 | recon 0.4049 | contr 0.0286 | impute 0.1712
+                 |   val  tot 1.2241 | recon 0.5755 | contr 0.2797 | impute 0.3690
+[Finetune] ep 065 | train tot 0.5584 | recon 0.3827 | contr 0.0262 | impute 0.1495
+                 |   val  tot 1.2228 | recon 0.5766 | contr 0.2766 | impute 0.3696
+[Finetune] ep 066 | train tot 0.6135 | recon 0.4074 | contr 0.0287 | impute 0.1774
+                 |   val  tot 1.2204 | recon 0.5767 | contr 0.2754 | impute 0.3682
+[Finetune] ep 067 | train tot 0.5369 | recon 0.3733 | contr 0.0226 | impute 0.1410
+                 |   val  tot 1.2168 | recon 0.5747 | contr 0.2743 | impute 0.3679
+[Finetune] ep 068 | train tot 0.5883 | recon 0.3973 | contr 0.0250 | impute 0.1660
+                 |   val  tot 1.1985 | recon 0.5702 | contr 0.2631 | impute 0.3652
+[Finetune] ep 069 | train tot 0.5134 | recon 0.3627 | contr 0.0196 | impute 0.1312
+                 |   val  tot 1.1915 | recon 0.5698 | contr 0.2572 | impute 0.3645
+[Finetune] ep 070 | train tot 0.5453 | recon 0.3763 | contr 0.0220 | impute 0.1470
+                 |   val  tot 1.1966 | recon 0.5699 | contr 0.2609 | impute 0.3659
+[Finetune] ep 071 | train tot 0.5551 | recon 0.3804 | contr 0.0232 | impute 0.1515
+                 |   val  tot 1.1928 | recon 0.5696 | contr 0.2586 | impute 0.3645
+[Finetune] ep 072 | train tot 0.5500 | recon 0.3779 | contr 0.0214 | impute 0.1507
+                 |   val  tot 1.1954 | recon 0.5700 | contr 0.2602 | impute 0.3652
+[Finetune] ep 073 | train tot 0.5386 | recon 0.3735 | contr 0.0207 | impute 0.1444
+                 |   val  tot 1.1874 | recon 0.5685 | contr 0.2547 | impute 0.3643
+[Finetune] ep 074 | train tot 0.5740 | recon 0.3897 | contr 0.0225 | impute 0.1618
+                 |   val  tot 1.1932 | recon 0.5696 | contr 0.2581 | impute 0.3654
+[Finetune] ep 075 | train tot 0.5616 | recon 0.3837 | contr 0.0223 | impute 0.1556
+                 |   val  tot 1.1871 | recon 0.5688 | contr 0.2538 | impute 0.3644
+[Finetune] ep 076 | train tot 0.5382 | recon 0.3745 | contr 0.0199 | impute 0.1438
+                 |   val  tot 1.1948 | recon 0.5688 | contr 0.2607 | impute 0.3653
+[Finetune] ep 077 | train tot 0.5558 | recon 0.3798 | contr 0.0218 | impute 0.1543
+                 |   val  tot 1.1934 | recon 0.5710 | contr 0.2575 | impute 0.3649
+[Finetune] ep 078 | train tot 0.5973 | recon 0.4004 | contr 0.0245 | impute 0.1725
+                 |   val  tot 1.1948 | recon 0.5685 | contr 0.2614 | impute 0.3649
+[Finetune] ep 079 | train tot 0.5660 | recon 0.3848 | contr 0.0220 | impute 0.1592
+                 |   val  tot 1.1980 | recon 0.5710 | contr 0.2614 | impute 0.3655
+[Finetune] ep 080 | train tot 0.5349 | recon 0.3721 | contr 0.0198 | impute 0.1431
+                 |   val  tot 1.2010 | recon 0.5692 | contr 0.2651 | impute 0.3667
+[Finetune] ep 081 | train tot 0.5204 | recon 0.3672 | contr 0.0183 | impute 0.1349
+                 |   val  tot 1.1993 | recon 0.5700 | contr 0.2636 | impute 0.3657
+[Finetune] ep 082 | train tot 0.5953 | recon 0.3992 | contr 0.0245 | impute 0.1715
+                 |   val  tot 1.1911 | recon 0.5687 | contr 0.2576 | impute 0.3648
+[Finetune] ep 083 | train tot 0.5482 | recon 0.3796 | contr 0.0194 | impute 0.1491
+                 |   val  tot 1.1967 | recon 0.5704 | contr 0.2610 | impute 0.3654
+[Finetune] ep 084 | train tot 0.5523 | recon 0.3804 | contr 0.0202 | impute 0.1517
+                 |   val  tot 1.1915 | recon 0.5696 | contr 0.2572 | impute 0.3647
+[Finetune] ep 085 | train tot 0.5892 | recon 0.3973 | contr 0.0224 | impute 0.1694
+                 |   val  tot 1.1879 | recon 0.5690 | contr 0.2537 | impute 0.3652
+[Finetune] ep 086 | train tot 0.5664 | recon 0.3871 | contr 0.0221 | impute 0.1572
+                 |   val  tot 1.1867 | recon 0.5703 | contr 0.2521 | impute 0.3643
+[Finetune] ep 087 | train tot 0.4742 | recon 0.3470 | contr 0.0145 | impute 0.1127
+                 |   val  tot 1.1888 | recon 0.5689 | contr 0.2542 | impute 0.3657
+[Finetune] ep 088 | train tot 0.5356 | recon 0.3722 | contr 0.0205 | impute 0.1428
+                 |   val  tot 1.1975 | recon 0.5710 | contr 0.2617 | impute 0.3648
+[Finetune] ep 089 | train tot 0.5810 | recon 0.3933 | contr 0.0223 | impute 0.1654
+                 |   val  tot 1.1824 | recon 0.5688 | contr 0.2493 | impute 0.3644
+[Finetune] ep 090 | train tot 0.5111 | recon 0.3610 | contr 0.0175 | impute 0.1325
+                 |   val  tot 1.1999 | recon 0.5705 | contr 0.2641 | impute 0.3653
+[Finetune] ep 091 | train tot 0.5961 | recon 0.3981 | contr 0.0231 | impute 0.1749
+                 |   val  tot 1.2007 | recon 0.5718 | contr 0.2632 | impute 0.3657
+[Finetune] ep 092 | train tot 0.5297 | recon 0.3719 | contr 0.0190 | impute 0.1389
+                 |   val  tot 1.1912 | recon 0.5688 | contr 0.2564 | impute 0.3660
+[Finetune] ep 093 | train tot 0.5311 | recon 0.3716 | contr 0.0194 | impute 0.1402
+                 |   val  tot 1.1942 | recon 0.5693 | contr 0.2604 | impute 0.3645
+[Finetune] ep 094 | train tot 0.5524 | recon 0.3811 | contr 0.0203 | impute 0.1511
+                 |   val  tot 1.2034 | recon 0.5697 | contr 0.2684 | impute 0.3654
+[Finetune] ep 095 | train tot 0.5110 | recon 0.3621 | contr 0.0173 | impute 0.1315
+                 |   val  tot 1.1885 | recon 0.5696 | contr 0.2535 | impute 0.3654
+[Finetune] ep 096 | train tot 0.4619 | recon 0.3428 | contr 0.0138 | impute 0.1053
+                 |   val  tot 1.1926 | recon 0.5696 | contr 0.2582 | impute 0.3648
+[Finetune] ep 097 | train tot 0.5393 | recon 0.3755 | contr 0.0190 | impute 0.1448
+                 |   val  tot 1.1932 | recon 0.5690 | contr 0.2591 | impute 0.3651
+[Finetune] ep 098 | train tot 0.5771 | recon 0.3915 | contr 0.0219 | impute 0.1637
+                 |   val  tot 1.1960 | recon 0.5696 | contr 0.2613 | impute 0.3651
+[Finetune] ep 099 | train tot 0.5520 | recon 0.3801 | contr 0.0203 | impute 0.1516
+                 |   val  tot 1.1973 | recon 0.5699 | contr 0.2628 | impute 0.3646
+[Finetune] ep 100 | train tot 0.4974 | recon 0.3563 | contr 0.0163 | impute 0.1248
+                 |   val  tot 1.1971 | recon 0.5702 | contr 0.2626 | impute 0.3644
+[Saved] Shared model checkpoint → checkpoints/baseline_ae/shared_model_ep100.pt
+  Loss curves saved → checkpoints/baseline_ae/loss_curves.png
+
+Done. Shared model saved to checkpoints/baseline_ae/
+[2/6] Training Baseline Shared VAE...
+Device: mps
+Loading data from data/tcga_redo_mlomicZ.pkl …
+Modalities: ['cnv', 'miRNA', 'rna', 'methylation']
+Loading splits from data/splits.json …
+Samples: total=8034 | train=6409 | val=798 | test=800
+AE checkpoint paths:
+  [OK] rna: aes_redo_z/rna_ae.pt
+  [OK] methylation: aes_redo_z/mth_ae.pt
+[SharedVAE] ep 001 β=2.00e-05 | train tot 1.8442 recon 0.9425 kl 106.7632
+                          |   val  tot 2.2568 recon 0.8022 kl 165.0014
+[SharedVAE] ep 002 β=4.00e-05 | train tot 1.0034 recon 0.5610 kl 217.4337
+                          |   val  tot 1.8029 recon 0.6947 kl 263.0824
+[SharedVAE] ep 003 β=6.00e-05 | train tot 0.9479 recon 0.5226 kl 279.5892
+                          |   val  tot 1.6558 recon 0.6568 kl 285.3884
+[SharedVAE] ep 004 β=8.00e-05 | train tot 0.7696 recon 0.4574 kl 282.3613
+                          |   val  tot 1.5977 recon 0.6361 kl 277.8409
+[SharedVAE] ep 005 β=1.00e-04 | train tot 0.7842 recon 0.4590 kl 272.5277
+                          |   val  tot 1.5555 recon 0.6256 kl 269.2123
+[SharedVAE] ep 006 β=1.20e-04 | train tot 0.7653 recon 0.4464 kl 261.8103
+                          |   val  tot 1.5133 recon 0.6161 kl 261.5176
+[SharedVAE] ep 007 β=1.40e-04 | train tot 0.7718 recon 0.4484 kl 255.4378
+                          |   val  tot 1.4753 recon 0.6083 kl 247.7015
+[SharedVAE] ep 008 β=1.60e-04 | train tot 0.7570 recon 0.4418 kl 244.3621
+                          |   val  tot 1.4819 recon 0.6059 kl 237.6663
+[SharedVAE] ep 009 β=1.80e-04 | train tot 0.7447 recon 0.4361 kl 233.6478
+                          |   val  tot 1.4374 recon 0.6017 kl 229.6733
+[SharedVAE] ep 010 β=2.00e-04 | train tot 0.7644 recon 0.4443 kl 227.3492
+                          |   val  tot 1.4165 recon 0.6005 kl 227.7439
+[SharedVAE] ep 011 β=2.20e-04 | train tot 0.7826 recon 0.4513 kl 219.2355
+                          |   val  tot 1.4089 recon 0.5974 kl 217.0190
+[SharedVAE] ep 012 β=2.40e-04 | train tot 0.7514 recon 0.4395 kl 211.0550
+                          |   val  tot 1.4033 recon 0.5964 kl 203.3464
+[SharedVAE] ep 013 β=2.60e-04 | train tot 0.7652 recon 0.4448 kl 204.8077
+                          |   val  tot 1.3975 recon 0.5940 kl 197.8242
+[SharedVAE] ep 014 β=2.80e-04 | train tot 0.7823 recon 0.4528 kl 197.1884
+                          |   val  tot 1.3798 recon 0.5922 kl 196.5331
+[SharedVAE] ep 015 β=3.00e-04 | train tot 0.6941 recon 0.4199 kl 187.2567
+                          |   val  tot 1.3919 recon 0.5931 kl 187.4610
+[SharedVAE] ep 016 β=3.20e-04 | train tot 0.7373 recon 0.4350 kl 183.8495
+                          |   val  tot 1.3731 recon 0.5907 kl 180.8480
+[SharedVAE] ep 017 β=3.40e-04 | train tot 0.6811 recon 0.4160 kl 174.2776
+                          |   val  tot 1.3702 recon 0.5897 kl 172.2407
+[SharedVAE] ep 018 β=3.60e-04 | train tot 0.7054 recon 0.4250 kl 170.2159
+                          |   val  tot 1.3750 recon 0.5888 kl 164.9438
+[SharedVAE] ep 019 β=3.80e-04 | train tot 0.7438 recon 0.4378 kl 167.4738
+                          |   val  tot 1.3760 recon 0.5913 kl 163.5617
+[SharedVAE] ep 020 β=4.00e-04 | train tot 0.7464 recon 0.4408 kl 162.4743
+                          |   val  tot 1.3699 recon 0.5885 kl 158.7174
+[SharedVAE] ep 021 β=4.20e-04 | train tot 0.7504 recon 0.4408 kl 158.1187
+                          |   val  tot 1.3702 recon 0.5887 kl 153.2593
+[SharedVAE] ep 022 β=4.40e-04 | train tot 0.6945 recon 0.4207 kl 152.4826
+                          |   val  tot 1.3596 recon 0.5886 kl 146.6052
+[SharedVAE] ep 023 β=4.60e-04 | train tot 0.7406 recon 0.4404 kl 148.6568
+                          |   val  tot 1.3684 recon 0.5899 kl 139.7207
+[SharedVAE] ep 024 β=4.80e-04 | train tot 0.7537 recon 0.4482 kl 144.0463
+                          |   val  tot 1.3562 recon 0.5893 kl 144.2831
+[SharedVAE] ep 025 β=5.00e-04 | train tot 0.6657 recon 0.4123 kl 139.5547
+                          |   val  tot 1.3618 recon 0.5881 kl 128.0801
+[SharedVAE] ep 026 β=5.20e-04 | train tot 0.6858 recon 0.4219 kl 132.8355
+                          |   val  tot 1.3625 recon 0.5871 kl 131.5710
+[SharedVAE] ep 027 β=5.40e-04 | train tot 0.6804 recon 0.4185 kl 129.6672
+                          |   val  tot 1.3648 recon 0.5886 kl 126.5449
+[SharedVAE] ep 028 β=5.60e-04 | train tot 0.6999 recon 0.4288 kl 126.8438
+                          |   val  tot 1.3620 recon 0.5859 kl 128.3555
+[SharedVAE] ep 029 β=5.80e-04 | train tot 0.6071 recon 0.3915 kl 120.7010
+                          |   val  tot 1.3711 recon 0.5890 kl 116.3534
+[SharedVAE] ep 030 β=6.00e-04 | train tot 0.7179 recon 0.4359 kl 122.1879
+                          |   val  tot 1.3727 recon 0.5897 kl 119.6201
+[SharedVAE] ep 031 β=6.20e-04 | train tot 0.7296 recon 0.4421 kl 117.6878
+                          |   val  tot 1.3708 recon 0.5887 kl 119.7850
+[SharedVAE] ep 032 β=6.40e-04 | train tot 0.6785 recon 0.4221 kl 116.0271
+                          |   val  tot 1.3619 recon 0.5895 kl 114.0459
+[SharedVAE] ep 033 β=6.60e-04 | train tot 0.7244 recon 0.4418 kl 113.0857
+                          |   val  tot 1.3625 recon 0.5894 kl 116.0885
+[SharedVAE] ep 034 β=6.80e-04 | train tot 0.7372 recon 0.4464 kl 112.0006
+                          |   val  tot 1.3759 recon 0.5917 kl 112.4634
+[SharedVAE] ep 035 β=7.00e-04 | train tot 0.7363 recon 0.4475 kl 109.5221
+                          |   val  tot 1.3696 recon 0.5902 kl 110.4258
+[SharedVAE] ep 036 β=7.20e-04 | train tot 0.7415 recon 0.4481 kl 108.1027
+                          |   val  tot 1.3488 recon 0.5850 kl 107.5480
+[SharedVAE] ep 037 β=7.40e-04 | train tot 0.7373 recon 0.4468 kl 106.6133
+                          |   val  tot 1.3521 recon 0.5822 kl 107.7667
+[SharedVAE] ep 038 β=7.60e-04 | train tot 0.7171 recon 0.4366 kl 106.0732
+                          |   val  tot 1.3468 recon 0.5840 kl 101.0296
+[SharedVAE] ep 039 β=7.80e-04 | train tot 0.7046 recon 0.4323 kl 102.5542
+                          |   val  tot 1.3496 recon 0.5859 kl 100.0201
+[SharedVAE] ep 040 β=8.00e-04 | train tot 0.7394 recon 0.4462 kl 103.1186
+                          |   val  tot 1.3438 recon 0.5862 kl 98.4131
+[SharedVAE] ep 041 β=8.20e-04 | train tot 0.6872 recon 0.4259 kl 98.4558
+                          |   val  tot 1.3470 recon 0.5844 kl 97.4163
+[SharedVAE] ep 042 β=8.40e-04 | train tot 0.7072 recon 0.4353 kl 97.7324
+                          |   val  tot 1.3470 recon 0.5835 kl 94.9131
+[SharedVAE] ep 043 β=8.60e-04 | train tot 0.7181 recon 0.4401 kl 96.2309
+                          |   val  tot 1.3534 recon 0.5839 kl 96.0700
+[SharedVAE] ep 044 β=8.80e-04 | train tot 0.7285 recon 0.4442 kl 94.7192
+                          |   val  tot 1.3510 recon 0.5831 kl 96.9541
+[SharedVAE] ep 045 β=9.00e-04 | train tot 0.6794 recon 0.4211 kl 94.1050
+                          |   val  tot 1.3526 recon 0.5871 kl 87.5386
+[SharedVAE] ep 046 β=9.20e-04 | train tot 0.7333 recon 0.4489 kl 91.2196
+                          |   val  tot 1.3537 recon 0.5863 kl 93.6413
+[SharedVAE] ep 047 β=9.40e-04 | train tot 0.7129 recon 0.4401 kl 90.1341
+                          |   val  tot 1.3546 recon 0.5852 kl 88.8764
+[SharedVAE] ep 048 β=9.60e-04 | train tot 0.7218 recon 0.4433 kl 88.9711
+                          |   val  tot 1.3501 recon 0.5859 kl 86.0817
+[SharedVAE] ep 049 β=9.80e-04 | train tot 0.7470 recon 0.4515 kl 90.3416
+                          |   val  tot 1.3571 recon 0.5866 kl 84.0466
+[SharedVAE] ep 050 β=1.00e-03 | train tot 0.7978 recon 0.4765 kl 88.7368
+                          |   val  tot 1.3557 recon 0.5885 kl 85.6147
+[SharedVAE] ep 051 β=1.00e-03 | train tot 0.7646 recon 0.4602 kl 88.9524
+                          |   val  tot 1.3540 recon 0.5865 kl 85.6681
+[SharedVAE] ep 052 β=1.00e-03 | train tot 0.7407 recon 0.4516 kl 86.8603
+                          |   val  tot 1.3453 recon 0.5833 kl 83.9302
+[SharedVAE] ep 053 β=1.00e-03 | train tot 0.6645 recon 0.4183 kl 84.5955
+                          |   val  tot 1.3504 recon 0.5855 kl 83.4243
+[SharedVAE] ep 054 β=1.00e-03 | train tot 0.7012 recon 0.4363 kl 85.1576
+                          |   val  tot 1.3500 recon 0.5846 kl 83.3633
+[SharedVAE] ep 055 β=1.00e-03 | train tot 0.6926 recon 0.4309 kl 85.0344
+                          |   val  tot 1.3429 recon 0.5846 kl 79.9030
+[SharedVAE] ep 056 β=1.00e-03 | train tot 0.7540 recon 0.4575 kl 85.2082
+                          |   val  tot 1.3494 recon 0.5853 kl 84.8972
+[SharedVAE] ep 057 β=1.00e-03 | train tot 0.8040 recon 0.4784 kl 87.5047
+                          |   val  tot 1.3469 recon 0.5844 kl 86.8234
+[SharedVAE] ep 058 β=1.00e-03 | train tot 0.6697 recon 0.4198 kl 85.9060
+                          |   val  tot 1.3406 recon 0.5835 kl 78.4963
+[SharedVAE] ep 059 β=1.00e-03 | train tot 0.6982 recon 0.4347 kl 84.2133
+                          |   val  tot 1.3401 recon 0.5845 kl 80.7636
+[SharedVAE] ep 060 β=1.00e-03 | train tot 0.7618 recon 0.4633 kl 84.3966
+                          |   val  tot 1.3466 recon 0.5831 kl 84.8891
+[SharedVAE] ep 061 β=1.00e-03 | train tot 0.7273 recon 0.4449 kl 85.5588
+                          |   val  tot 1.3454 recon 0.5829 kl 83.0039
+[SharedVAE] ep 062 β=1.00e-03 | train tot 0.7068 recon 0.4362 kl 84.6015
+                          |   val  tot 1.3450 recon 0.5846 kl 79.9240
+[SharedVAE] ep 063 β=1.00e-03 | train tot 0.6927 recon 0.4318 kl 84.0362
+                          |   val  tot 1.3421 recon 0.5848 kl 77.5859
+[SharedVAE] ep 064 β=1.00e-03 | train tot 0.6811 recon 0.4268 kl 82.7167
+                          |   val  tot 1.3393 recon 0.5840 kl 80.5443
+[SharedVAE] ep 065 β=1.00e-03 | train tot 0.6645 recon 0.4207 kl 81.7951
+                          |   val  tot 1.3369 recon 0.5849 kl 79.1264
+[SharedVAE] ep 066 β=1.00e-03 | train tot 0.6917 recon 0.4311 kl 83.3396
+                          |   val  tot 1.3389 recon 0.5833 kl 79.8817
+[SharedVAE] ep 067 β=1.00e-03 | train tot 0.7063 recon 0.4394 kl 81.7539
+                          |   val  tot 1.3439 recon 0.5823 kl 81.7070
+[SharedVAE] ep 068 β=1.00e-03 | train tot 0.6917 recon 0.4316 kl 83.0272
+                          |   val  tot 1.3464 recon 0.5847 kl 78.9943
+[SharedVAE] ep 069 β=1.00e-03 | train tot 0.7213 recon 0.4461 kl 82.6124
+                          |   val  tot 1.3405 recon 0.5849 kl 79.5545
+[SharedVAE] ep 070 β=1.00e-03 | train tot 0.6879 recon 0.4312 kl 82.0971
+                          |   val  tot 1.3428 recon 0.5845 kl 79.5179
+[SharedVAE] ep 071 β=1.00e-03 | train tot 0.6696 recon 0.4234 kl 81.3113
+                          |   val  tot 1.3375 recon 0.5832 kl 78.6586
+[SharedVAE] ep 072 β=1.00e-03 | train tot 0.7279 recon 0.4489 kl 82.3475
+                          |   val  tot 1.3444 recon 0.5844 kl 79.1859
+[SharedVAE] ep 073 β=1.00e-03 | train tot 0.7146 recon 0.4429 kl 81.6959
+                          |   val  tot 1.3405 recon 0.5836 kl 80.9697
+[SharedVAE] ep 074 β=1.00e-03 | train tot 0.7139 recon 0.4431 kl 81.9374
+                          |   val  tot 1.3426 recon 0.5830 kl 79.4927
+[SharedVAE] ep 075 β=1.00e-03 | train tot 0.6712 recon 0.4252 kl 80.8478
+                          |   val  tot 1.3384 recon 0.5861 kl 76.3372
+[SharedVAE] ep 076 β=1.00e-03 | train tot 0.6541 recon 0.4171 kl 80.3338
+                          |   val  tot 1.3426 recon 0.5843 kl 76.7816
+[SharedVAE] ep 077 β=1.00e-03 | train tot 0.6479 recon 0.4134 kl 79.8111
+                          |   val  tot 1.3425 recon 0.5826 kl 76.3847
+[SharedVAE] ep 078 β=1.00e-03 | train tot 0.7235 recon 0.4484 kl 80.4742
+                          |   val  tot 1.3360 recon 0.5834 kl 78.9325
+[SharedVAE] ep 079 β=1.00e-03 | train tot 0.6431 recon 0.4114 kl 79.8406
+                          |   val  tot 1.3373 recon 0.5835 kl 76.4194
+[SharedVAE] ep 080 β=1.00e-03 | train tot 0.6863 recon 0.4319 kl 80.1338
+                          |   val  tot 1.3350 recon 0.5831 kl 77.3882
+[SharedVAE] ep 081 β=1.00e-03 | train tot 0.7568 recon 0.4601 kl 82.4690
+                          |   val  tot 1.3340 recon 0.5824 kl 78.6958
+[SharedVAE] ep 082 β=1.00e-03 | train tot 0.6882 recon 0.4307 kl 81.4960
+                          |   val  tot 1.3305 recon 0.5842 kl 76.6401
+[SharedVAE] ep 083 β=1.00e-03 | train tot 0.6402 recon 0.4112 kl 79.1353
+                          |   val  tot 1.3469 recon 0.5845 kl 75.4544
+[SharedVAE] ep 084 β=1.00e-03 | train tot 0.6640 recon 0.4208 kl 79.8006
+                          |   val  tot 1.3345 recon 0.5825 kl 75.7755
+[SharedVAE] ep 085 β=1.00e-03 | train tot 0.6382 recon 0.4109 kl 78.2769
+                          |   val  tot 1.3299 recon 0.5816 kl 75.7398
+[SharedVAE] ep 086 β=1.00e-03 | train tot 0.6456 recon 0.4151 kl 78.3205
+                          |   val  tot 1.3358 recon 0.5841 kl 75.7048
+[SharedVAE] ep 087 β=1.00e-03 | train tot 0.7539 recon 0.4607 kl 80.6149
+                          |   val  tot 1.3289 recon 0.5831 kl 77.6209
+[SharedVAE] ep 088 β=1.00e-03 | train tot 0.6245 recon 0.4039 kl 78.8394
+                          |   val  tot 1.3337 recon 0.5828 kl 75.3037
+[SharedVAE] ep 089 β=1.00e-03 | train tot 0.6879 recon 0.4337 kl 79.0224
+                          |   val  tot 1.3407 recon 0.5818 kl 76.4388
+[SharedVAE] ep 090 β=1.00e-03 | train tot 0.7266 recon 0.4501 kl 79.7393
+                          |   val  tot 1.3399 recon 0.5825 kl 78.1639
+[SharedVAE] ep 091 β=1.00e-03 | train tot 0.6840 recon 0.4293 kl 80.5219
+                          |   val  tot 1.3368 recon 0.5830 kl 77.5588
+[SharedVAE] ep 092 β=1.00e-03 | train tot 0.6590 recon 0.4200 kl 78.8010
+                          |   val  tot 1.3347 recon 0.5829 kl 76.0546
+[SharedVAE] ep 093 β=1.00e-03 | train tot 0.6316 recon 0.4083 kl 78.3252
+                          |   val  tot 1.3373 recon 0.5843 kl 74.8021
+[SharedVAE] ep 094 β=1.00e-03 | train tot 0.7266 recon 0.4512 kl 79.3740
+                          |   val  tot 1.3351 recon 0.5821 kl 77.0447
+[SharedVAE] ep 095 β=1.00e-03 | train tot 0.6964 recon 0.4339 kl 80.4139
+                          |   val  tot 1.3377 recon 0.5822 kl 76.9115
+[SharedVAE] ep 096 β=1.00e-03 | train tot 0.6928 recon 0.4319 kl 80.3934
+                          |   val  tot 1.3302 recon 0.5832 kl 76.6634
+[SharedVAE] ep 097 β=1.00e-03 | train tot 0.6784 recon 0.4276 kl 79.4123
+                          |   val  tot 1.3358 recon 0.5821 kl 75.3284
+[SharedVAE] ep 098 β=1.00e-03 | train tot 0.6745 recon 0.4266 kl 79.2805
+                          |   val  tot 1.3339 recon 0.5828 kl 75.8575
+[SharedVAE] ep 099 β=1.00e-03 | train tot 0.6736 recon 0.4262 kl 78.1735
+                          |   val  tot 1.3345 recon 0.5829 kl 76.1643
+[SharedVAE] ep 100 β=1.00e-03 | train tot 0.6472 recon 0.4162 kl 77.5067
+                          |   val  tot 1.3331 recon 0.5816 kl 76.0166
+[Saved] Shared model checkpoint → checkpoints/baseline_vae/shared_model_ep100.pt
+  Loss curves saved → checkpoints/baseline_vae/loss_curves.png
+
+Done. SharedVAE saved to checkpoints/baseline_vae/
+[3/6] Training Baseline Shared CVAE...
+Device: cpu
+Modalities: ['rna', 'methylation']
+Samples: train=6409 val=798 test=800
+Primary sites: 54 classes
+
+============================================================
+Running: baseline  overrides: (baseline)
+  best_val=1.2302  train@best=0.5912  gap=0.6389  epoch=100/100  time=364s
+
+======================================================================
+Experiment                  best_val  train@best      gap    ep  total_ep
+----------------------------------------------------------------------
+baseline                      1.2302      0.5912   0.6389   100       100
+
+Results saved → checkpoints/baseline_cvae/cvae_experiments_20260323_150116.json
+>> Setting hard_negative_weight to 1.0 in src/mae_masked.py
+[4/6] Training Modified Shared AE...
+Device: mps
+Loading data from data/tcga_redo_mlomicZ.pkl …
+Modalities: ['cnv', 'miRNA', 'rna', 'methylation']
+Loading splits from data/splits.json …
+Samples: total=8034 | train=6409 | val=798 | test=800
+Active modalities: ['rna', 'methylation']
+AE checkpoint paths:
+  [OK] rna: aes_redo_z/rna_ae.pt
+  [OK] methylation: aes_redo_z/mth_ae.pt
+[Finetune] ep 001 | train tot 2.1129 | recon 0.7585 | contr 1.0413 | impute 0.3131
+                 |   val  tot 3.0260 | recon 0.7552 | contr 1.7933 | impute 0.4776
+[Finetune] ep 002 | train tot 1.2367 | recon 0.5077 | contr 0.5264 | impute 0.2026
+                 |   val  tot 2.5600 | recon 0.6725 | contr 1.4591 | impute 0.4284
+[Finetune] ep 003 | train tot 1.1560 | recon 0.4726 | contr 0.4858 | impute 0.1976
+                 |   val  tot 2.4103 | recon 0.6426 | contr 1.3560 | impute 0.4117
+[Finetune] ep 004 | train tot 1.1026 | recon 0.4516 | contr 0.4580 | impute 0.1929
+                 |   val  tot 2.3054 | recon 0.6271 | contr 1.2737 | impute 0.4046
+[Finetune] ep 005 | train tot 0.9764 | recon 0.4238 | contr 0.3881 | impute 0.1645
+                 |   val  tot 2.2482 | recon 0.6159 | contr 1.2348 | impute 0.3975
+[Finetune] ep 006 | train tot 1.0503 | recon 0.4338 | contr 0.4277 | impute 0.1888
+                 |   val  tot 2.1926 | recon 0.6107 | contr 1.1893 | impute 0.3926
+[Finetune] ep 007 | train tot 0.9986 | recon 0.4201 | contr 0.4001 | impute 0.1784
+                 |   val  tot 2.1756 | recon 0.6051 | contr 1.1769 | impute 0.3935
+[Finetune] ep 008 | train tot 0.9641 | recon 0.4129 | contr 0.3796 | impute 0.1715
+                 |   val  tot 2.1544 | recon 0.6009 | contr 1.1638 | impute 0.3897
+[Finetune] ep 009 | train tot 0.8992 | recon 0.3976 | contr 0.3456 | impute 0.1560
+                 |   val  tot 2.1111 | recon 0.5988 | contr 1.1268 | impute 0.3855
+[Finetune] ep 010 | train tot 1.0388 | recon 0.4256 | contr 0.4193 | impute 0.1938
+                 |   val  tot 2.0936 | recon 0.5965 | contr 1.1127 | impute 0.3843
+[Finetune] ep 011 | train tot 0.8998 | recon 0.3969 | contr 0.3434 | impute 0.1596
+                 |   val  tot 2.0822 | recon 0.5956 | contr 1.1031 | impute 0.3836
+[Finetune] ep 012 | train tot 0.8808 | recon 0.3933 | contr 0.3303 | impute 0.1571
+                 |   val  tot 2.0651 | recon 0.5933 | contr 1.0893 | impute 0.3826
+[Finetune] ep 013 | train tot 1.0060 | recon 0.4186 | contr 0.3978 | impute 0.1896
+                 |   val  tot 2.0851 | recon 0.5929 | contr 1.1095 | impute 0.3827
+[Finetune] ep 014 | train tot 0.8667 | recon 0.3929 | contr 0.3204 | impute 0.1534
+                 |   val  tot 2.0379 | recon 0.5899 | contr 1.0684 | impute 0.3796
+[Finetune] ep 015 | train tot 0.9977 | recon 0.4184 | contr 0.3896 | impute 0.1896
+                 |   val  tot 2.0238 | recon 0.5876 | contr 1.0562 | impute 0.3800
+[Finetune] ep 016 | train tot 1.0788 | recon 0.4356 | contr 0.4319 | impute 0.2113
+                 |   val  tot 2.0224 | recon 0.5887 | contr 1.0560 | impute 0.3777
+[Finetune] ep 017 | train tot 1.0378 | recon 0.4251 | contr 0.4132 | impute 0.1995
+                 |   val  tot 2.0084 | recon 0.5892 | contr 1.0410 | impute 0.3783
+[Finetune] ep 018 | train tot 1.0591 | recon 0.4320 | contr 0.4221 | impute 0.2050
+                 |   val  tot 2.0063 | recon 0.5874 | contr 1.0423 | impute 0.3766
+[Finetune] ep 019 | train tot 0.9004 | recon 0.3988 | contr 0.3367 | impute 0.1649
+                 |   val  tot 1.9977 | recon 0.5857 | contr 1.0358 | impute 0.3762
+[Finetune] ep 020 | train tot 0.9398 | recon 0.4090 | contr 0.3532 | impute 0.1776
+                 |   val  tot 1.9904 | recon 0.5864 | contr 1.0290 | impute 0.3749
+[Finetune] ep 021 | train tot 0.9253 | recon 0.4037 | contr 0.3489 | impute 0.1727
+                 |   val  tot 1.9874 | recon 0.5850 | contr 1.0274 | impute 0.3750
+[Finetune] ep 022 | train tot 0.9195 | recon 0.3991 | contr 0.3479 | impute 0.1725
+                 |   val  tot 1.9943 | recon 0.5852 | contr 1.0335 | impute 0.3755
+[Finetune] ep 023 | train tot 1.0163 | recon 0.4246 | contr 0.3948 | impute 0.1970
+                 |   val  tot 1.9768 | recon 0.5864 | contr 1.0166 | impute 0.3738
+[Finetune] ep 024 | train tot 0.9749 | recon 0.4179 | contr 0.3692 | impute 0.1878
+                 |   val  tot 1.9665 | recon 0.5852 | contr 1.0070 | impute 0.3744
+[Finetune] ep 025 | train tot 0.9289 | recon 0.4063 | contr 0.3451 | impute 0.1775
+                 |   val  tot 1.9480 | recon 0.5838 | contr 0.9917 | impute 0.3725
+[Finetune] ep 026 | train tot 0.9393 | recon 0.4096 | contr 0.3504 | impute 0.1793
+                 |   val  tot 1.9708 | recon 0.5838 | contr 1.0115 | impute 0.3755
+[Finetune] ep 027 | train tot 0.9116 | recon 0.4032 | contr 0.3356 | impute 0.1729
+                 |   val  tot 1.9439 | recon 0.5825 | contr 0.9898 | impute 0.3716
+[Finetune] ep 028 | train tot 0.8334 | recon 0.3854 | contr 0.2947 | impute 0.1533
+                 |   val  tot 1.9552 | recon 0.5822 | contr 0.9991 | impute 0.3739
+[Finetune] ep 029 | train tot 0.9769 | recon 0.4187 | contr 0.3677 | impute 0.1905
+                 |   val  tot 1.9523 | recon 0.5834 | contr 0.9976 | impute 0.3713
+[Finetune] ep 030 | train tot 0.8548 | recon 0.3915 | contr 0.3069 | impute 0.1565
+                 |   val  tot 1.9498 | recon 0.5835 | contr 0.9931 | impute 0.3732
+[Finetune] ep 031 | train tot 0.9349 | recon 0.4089 | contr 0.3469 | impute 0.1791
+                 |   val  tot 1.9507 | recon 0.5831 | contr 0.9945 | impute 0.3732
+[Finetune] ep 032 | train tot 0.8469 | recon 0.3911 | contr 0.2989 | impute 0.1570
+                 |   val  tot 1.9336 | recon 0.5810 | contr 0.9814 | impute 0.3712
+[Finetune] ep 033 | train tot 0.8832 | recon 0.3991 | contr 0.3170 | impute 0.1670
+                 |   val  tot 1.9393 | recon 0.5820 | contr 0.9849 | impute 0.3724
+[Finetune] ep 034 | train tot 0.9152 | recon 0.4059 | contr 0.3334 | impute 0.1759
+                 |   val  tot 1.9309 | recon 0.5811 | contr 0.9786 | impute 0.3713
+[Finetune] ep 035 | train tot 0.8552 | recon 0.3936 | contr 0.3020 | impute 0.1596
+                 |   val  tot 1.9407 | recon 0.5809 | contr 0.9875 | impute 0.3723
+[Finetune] ep 036 | train tot 0.8974 | recon 0.4031 | contr 0.3230 | impute 0.1714
+                 |   val  tot 1.9362 | recon 0.5820 | contr 0.9829 | impute 0.3714
+[Finetune] ep 037 | train tot 0.9895 | recon 0.4260 | contr 0.3682 | impute 0.1953
+                 |   val  tot 1.9274 | recon 0.5827 | contr 0.9738 | impute 0.3710
+[Finetune] ep 038 | train tot 0.9211 | recon 0.4081 | contr 0.3361 | impute 0.1768
+                 |   val  tot 1.9332 | recon 0.5820 | contr 0.9798 | impute 0.3714
+[Finetune] ep 039 | train tot 0.9024 | recon 0.4047 | contr 0.3249 | impute 0.1728
+                 |   val  tot 1.9283 | recon 0.5814 | contr 0.9772 | impute 0.3697
+[Finetune] ep 040 | train tot 0.9506 | recon 0.4147 | contr 0.3507 | impute 0.1853
+                 |   val  tot 1.9255 | recon 0.5826 | contr 0.9724 | impute 0.3705
+[Finetune] ep 041 | train tot 0.9514 | recon 0.4171 | contr 0.3500 | impute 0.1843
+                 |   val  tot 1.9180 | recon 0.5816 | contr 0.9666 | impute 0.3698
+[Finetune] ep 042 | train tot 0.9166 | recon 0.4065 | contr 0.3316 | impute 0.1785
+                 |   val  tot 1.9161 | recon 0.5785 | contr 0.9691 | impute 0.3685
+[Finetune] ep 043 | train tot 0.8103 | recon 0.3833 | contr 0.2780 | impute 0.1490
+                 |   val  tot 1.9235 | recon 0.5812 | contr 0.9725 | impute 0.3698
+[Finetune] ep 044 | train tot 0.8701 | recon 0.3977 | contr 0.3067 | impute 0.1658
+                 |   val  tot 1.9336 | recon 0.5801 | contr 0.9821 | impute 0.3714
+[Finetune] ep 045 | train tot 0.9595 | recon 0.4198 | contr 0.3511 | impute 0.1886
+                 |   val  tot 1.9138 | recon 0.5811 | contr 0.9637 | impute 0.3690
+[Finetune] ep 046 | train tot 0.9190 | recon 0.4112 | contr 0.3301 | impute 0.1777
+                 |   val  tot 1.9260 | recon 0.5822 | contr 0.9729 | impute 0.3709
+[Finetune] ep 047 | train tot 0.9815 | recon 0.4232 | contr 0.3635 | impute 0.1948
+                 |   val  tot 1.9208 | recon 0.5812 | contr 0.9699 | impute 0.3696
+[Finetune] ep 048 | train tot 0.9889 | recon 0.4272 | contr 0.3649 | impute 0.1968
+                 |   val  tot 1.9167 | recon 0.5807 | contr 0.9665 | impute 0.3696
+[Finetune] ep 049 | train tot 0.7842 | recon 0.3811 | contr 0.2608 | impute 0.1423
+                 |   val  tot 1.9129 | recon 0.5808 | contr 0.9626 | impute 0.3696
+[Finetune] ep 050 | train tot 0.8526 | recon 0.3967 | contr 0.2961 | impute 0.1598
+                 |   val  tot 1.9172 | recon 0.5827 | contr 0.9657 | impute 0.3688
+[Finetune] ep 051 | train tot 0.7829 | recon 0.3803 | contr 0.2615 | impute 0.1411
+                 |   val  tot 1.9115 | recon 0.5811 | contr 0.9605 | impute 0.3700
+[Finetune] ep 052 | train tot 0.8883 | recon 0.4033 | contr 0.3157 | impute 0.1693
+                 |   val  tot 1.9086 | recon 0.5816 | contr 0.9578 | impute 0.3693
+[Finetune] ep 053 | train tot 0.8749 | recon 0.3997 | contr 0.3073 | impute 0.1679
+                 |   val  tot 1.9184 | recon 0.5816 | contr 0.9676 | impute 0.3692
+[Finetune] ep 054 | train tot 0.8742 | recon 0.4028 | contr 0.3036 | impute 0.1678
+                 |   val  tot 1.9165 | recon 0.5810 | contr 0.9657 | impute 0.3697
+[Finetune] ep 055 | train tot 0.7595 | recon 0.3763 | contr 0.2484 | impute 0.1348
+                 |   val  tot 1.9154 | recon 0.5804 | contr 0.9653 | impute 0.3697
+[Finetune] ep 056 | train tot 0.7980 | recon 0.3853 | contr 0.2669 | impute 0.1459
+                 |   val  tot 1.9013 | recon 0.5795 | contr 0.9533 | impute 0.3684
+[Finetune] ep 057 | train tot 0.8746 | recon 0.4001 | contr 0.3070 | impute 0.1675
+                 |   val  tot 1.9232 | recon 0.5801 | contr 0.9735 | impute 0.3696
+[Finetune] ep 058 | train tot 0.8512 | recon 0.3960 | contr 0.2942 | impute 0.1610
+                 |   val  tot 1.9105 | recon 0.5804 | contr 0.9601 | impute 0.3701
+[Finetune] ep 059 | train tot 0.8902 | recon 0.4047 | contr 0.3139 | impute 0.1717
+                 |   val  tot 1.9010 | recon 0.5815 | contr 0.9493 | impute 0.3702
+[Finetune] ep 060 | train tot 0.7968 | recon 0.3851 | contr 0.2643 | impute 0.1474
+                 |   val  tot 1.9024 | recon 0.5807 | contr 0.9514 | impute 0.3703
+[Finetune] ep 061 | train tot 0.8065 | recon 0.3849 | contr 0.2727 | impute 0.1489
+                 |   val  tot 1.9159 | recon 0.5801 | contr 0.9667 | impute 0.3691
+[Finetune] ep 062 | train tot 0.7980 | recon 0.3855 | contr 0.2676 | impute 0.1449
+                 |   val  tot 1.9139 | recon 0.5794 | contr 0.9663 | impute 0.3682
+[Finetune] ep 063 | train tot 0.8668 | recon 0.4002 | contr 0.3005 | impute 0.1661
+                 |   val  tot 1.9066 | recon 0.5806 | contr 0.9576 | impute 0.3684
+[Finetune] ep 064 | train tot 0.8365 | recon 0.3948 | contr 0.2853 | impute 0.1564
+                 |   val  tot 1.9160 | recon 0.5800 | contr 0.9678 | impute 0.3682
+[Finetune] ep 065 | train tot 0.8569 | recon 0.4005 | contr 0.2935 | impute 0.1629
+                 |   val  tot 1.9230 | recon 0.5810 | contr 0.9726 | impute 0.3694
+[Finetune] ep 066 | train tot 0.8762 | recon 0.4016 | contr 0.3069 | impute 0.1678
+                 |   val  tot 1.9083 | recon 0.5814 | contr 0.9583 | impute 0.3686
+[Finetune] ep 067 | train tot 0.7967 | recon 0.3838 | contr 0.2660 | impute 0.1470
+                 |   val  tot 1.9134 | recon 0.5801 | contr 0.9634 | impute 0.3699
+[Finetune] ep 068 | train tot 0.8494 | recon 0.3977 | contr 0.2900 | impute 0.1617
+                 |   val  tot 1.9253 | recon 0.5808 | contr 0.9762 | impute 0.3683
+[Finetune] ep 069 | train tot 0.8649 | recon 0.4002 | contr 0.2996 | impute 0.1650
+                 |   val  tot 1.9064 | recon 0.5813 | contr 0.9572 | impute 0.3680
+[Finetune] ep 070 | train tot 0.7679 | recon 0.3796 | contr 0.2509 | impute 0.1375
+                 |   val  tot 1.9199 | recon 0.5814 | contr 0.9683 | impute 0.3702
+[Finetune] ep 071 | train tot 0.8370 | recon 0.3933 | contr 0.2845 | impute 0.1593
+                 |   val  tot 1.8785 | recon 0.5756 | contr 0.9381 | impute 0.3648
+[Finetune] ep 072 | train tot 0.8650 | recon 0.3992 | contr 0.2987 | impute 0.1670
+                 |   val  tot 1.8834 | recon 0.5746 | contr 0.9436 | impute 0.3652
+[Finetune] ep 073 | train tot 0.7146 | recon 0.3603 | contr 0.2290 | impute 0.1252
+                 |   val  tot 1.8790 | recon 0.5738 | contr 0.9398 | impute 0.3654
+[Finetune] ep 074 | train tot 0.7839 | recon 0.3798 | contr 0.2577 | impute 0.1463
+                 |   val  tot 1.8839 | recon 0.5751 | contr 0.9441 | impute 0.3647
+[Finetune] ep 075 | train tot 0.7445 | recon 0.3694 | contr 0.2412 | impute 0.1339
+                 |   val  tot 1.8709 | recon 0.5746 | contr 0.9316 | impute 0.3648
+[Finetune] ep 076 | train tot 0.9030 | recon 0.4070 | contr 0.3190 | impute 0.1770
+                 |   val  tot 1.8802 | recon 0.5746 | contr 0.9406 | impute 0.3650
+[Finetune] ep 077 | train tot 0.8086 | recon 0.3855 | contr 0.2723 | impute 0.1509
+                 |   val  tot 1.8693 | recon 0.5741 | contr 0.9317 | impute 0.3635
+[Finetune] ep 078 | train tot 0.7517 | recon 0.3697 | contr 0.2455 | impute 0.1364
+                 |   val  tot 1.8748 | recon 0.5740 | contr 0.9358 | impute 0.3650
+[Finetune] ep 079 | train tot 0.8168 | recon 0.3870 | contr 0.2736 | impute 0.1562
+                 |   val  tot 1.8752 | recon 0.5735 | contr 0.9368 | impute 0.3649
+[Finetune] ep 080 | train tot 0.8035 | recon 0.3836 | contr 0.2691 | impute 0.1509
+                 |   val  tot 1.8773 | recon 0.5744 | contr 0.9390 | impute 0.3639
+[Finetune] ep 081 | train tot 0.7213 | recon 0.3633 | contr 0.2306 | impute 0.1274
+                 |   val  tot 1.8836 | recon 0.5747 | contr 0.9447 | impute 0.3642
+[Finetune] ep 082 | train tot 0.8438 | recon 0.3926 | contr 0.2906 | impute 0.1607
+                 |   val  tot 1.8725 | recon 0.5741 | contr 0.9340 | impute 0.3644
+[Finetune] ep 083 | train tot 0.8103 | recon 0.3844 | contr 0.2729 | impute 0.1530
+                 |   val  tot 1.8696 | recon 0.5722 | contr 0.9330 | impute 0.3644
+[Finetune] ep 084 | train tot 0.8637 | recon 0.3985 | contr 0.2974 | impute 0.1678
+                 |   val  tot 1.8666 | recon 0.5729 | contr 0.9292 | impute 0.3645
+[Finetune] ep 085 | train tot 0.7388 | recon 0.3703 | contr 0.2346 | impute 0.1340
+                 |   val  tot 1.8751 | recon 0.5734 | contr 0.9363 | impute 0.3654
+[Finetune] ep 086 | train tot 0.8515 | recon 0.3965 | contr 0.2897 | impute 0.1653
+                 |   val  tot 1.8765 | recon 0.5759 | contr 0.9351 | impute 0.3655
+[Finetune] ep 087 | train tot 0.7522 | recon 0.3734 | contr 0.2421 | impute 0.1368
+                 |   val  tot 1.8765 | recon 0.5741 | contr 0.9372 | impute 0.3652
+[Finetune] ep 088 | train tot 0.7744 | recon 0.3768 | contr 0.2542 | impute 0.1435
+                 |   val  tot 1.8760 | recon 0.5737 | contr 0.9385 | impute 0.3638
+[Finetune] ep 089 | train tot 0.8263 | recon 0.3896 | contr 0.2785 | impute 0.1583
+                 |   val  tot 1.8841 | recon 0.5719 | contr 0.9476 | impute 0.3646
+[Finetune] ep 090 | train tot 0.8133 | recon 0.3891 | contr 0.2708 | impute 0.1534
+                 |   val  tot 1.8778 | recon 0.5741 | contr 0.9381 | impute 0.3656
+[Finetune] ep 091 | train tot 0.8090 | recon 0.3848 | contr 0.2709 | impute 0.1534
+                 |   val  tot 1.8817 | recon 0.5747 | contr 0.9419 | impute 0.3651
+[Finetune] ep 092 | train tot 0.7767 | recon 0.3771 | contr 0.2554 | impute 0.1442
+                 |   val  tot 1.8714 | recon 0.5733 | contr 0.9336 | impute 0.3645
+[Finetune] ep 093 | train tot 0.7504 | recon 0.3722 | contr 0.2421 | impute 0.1361
+                 |   val  tot 1.8777 | recon 0.5727 | contr 0.9404 | impute 0.3646
+[Finetune] ep 094 | train tot 0.8708 | recon 0.4031 | contr 0.2969 | impute 0.1708
+                 |   val  tot 1.8734 | recon 0.5732 | contr 0.9352 | impute 0.3650
+[Finetune] ep 095 | train tot 0.7413 | recon 0.3665 | contr 0.2390 | impute 0.1358
+                 |   val  tot 1.8704 | recon 0.5744 | contr 0.9315 | impute 0.3646
+[Finetune] ep 096 | train tot 0.7170 | recon 0.3630 | contr 0.2256 | impute 0.1284
+                 |   val  tot 1.8640 | recon 0.5711 | contr 0.9308 | impute 0.3620
+[Finetune] ep 097 | train tot 0.7182 | recon 0.3620 | contr 0.2270 | impute 0.1292
+                 |   val  tot 1.8556 | recon 0.5701 | contr 0.9219 | impute 0.3635
+[Finetune] ep 098 | train tot 0.8152 | recon 0.3866 | contr 0.2722 | impute 0.1563
+                 |   val  tot 1.8665 | recon 0.5716 | contr 0.9321 | impute 0.3627
+[Finetune] ep 099 | train tot 0.7364 | recon 0.3674 | contr 0.2357 | impute 0.1333
+                 |   val  tot 1.8680 | recon 0.5703 | contr 0.9352 | impute 0.3626
+[Finetune] ep 100 | train tot 0.7520 | recon 0.3710 | contr 0.2422 | impute 0.1387
+                 |   val  tot 1.8659 | recon 0.5704 | contr 0.9318 | impute 0.3638
+[Saved] Shared model checkpoint → checkpoints/modified_ae/shared_model_ep100.pt
+  Loss curves saved → checkpoints/modified_ae/loss_curves.png
+
+Done. Shared model saved to checkpoints/modified_ae/
+[5/6] Training Modified Shared VAE...
+Device: mps
+Loading data from data/tcga_redo_mlomicZ.pkl …
+Modalities: ['cnv', 'miRNA', 'rna', 'methylation']
+Loading splits from data/splits.json …
+Samples: total=8034 | train=6409 | val=798 | test=800
+AE checkpoint paths:
+  [OK] rna: aes_redo_z/rna_ae.pt
+  [OK] methylation: aes_redo_z/mth_ae.pt
+[SharedVAE] ep 001 β=2.00e-05 | train tot 2.4804 recon 0.9813 kl 102.7599
+                          |   val  tot 3.0769 recon 0.8028 kl 161.8793
+[SharedVAE] ep 002 β=4.00e-05 | train tot 1.3920 recon 0.5670 kl 216.9024
+                          |   val  tot 2.6026 recon 0.6963 kl 259.9352
+[SharedVAE] ep 003 β=6.00e-05 | train tot 1.2251 recon 0.4974 kl 271.8962
+                          |   val  tot 2.4409 recon 0.6567 kl 283.6323
+[SharedVAE] ep 004 β=8.00e-05 | train tot 1.1839 recon 0.4816 kl 283.1772
+                          |   val  tot 2.3639 recon 0.6404 kl 281.3009
+[SharedVAE] ep 005 β=1.00e-04 | train tot 1.1316 recon 0.4595 kl 279.6065
+                          |   val  tot 2.3029 recon 0.6291 kl 270.9427
+[SharedVAE] ep 006 β=1.20e-04 | train tot 1.1684 recon 0.4615 kl 269.5331
+                          |   val  tot 2.2435 recon 0.6182 kl 263.7295
+[SharedVAE] ep 007 β=1.40e-04 | train tot 1.0427 recon 0.4398 kl 256.0427
+                          |   val  tot 2.2328 recon 0.6175 kl 253.4957
+[SharedVAE] ep 008 β=1.60e-04 | train tot 1.1437 recon 0.4563 kl 249.4788
+                          |   val  tot 2.1967 recon 0.6092 kl 248.7420
+[SharedVAE] ep 009 β=1.80e-04 | train tot 1.1043 recon 0.4463 kl 241.1965
+                          |   val  tot 2.1754 recon 0.6038 kl 235.3450
+[SharedVAE] ep 010 β=2.00e-04 | train tot 0.9586 recon 0.4136 kl 232.0014
+                          |   val  tot 2.1634 recon 0.6021 kl 224.7006
+[SharedVAE] ep 011 β=2.20e-04 | train tot 1.0162 recon 0.4267 kl 224.0873
+                          |   val  tot 2.1495 recon 0.6005 kl 214.8323
+[SharedVAE] ep 012 β=2.40e-04 | train tot 1.1429 recon 0.4540 kl 218.4312
+                          |   val  tot 2.1277 recon 0.5990 kl 214.1350
+[SharedVAE] ep 013 β=2.60e-04 | train tot 1.1526 recon 0.4561 kl 212.9321
+                          |   val  tot 2.1246 recon 0.5995 kl 210.1845
+[SharedVAE] ep 014 β=2.80e-04 | train tot 1.0263 recon 0.4305 kl 204.3608
+                          |   val  tot 2.1158 recon 0.5967 kl 197.5224
+[SharedVAE] ep 015 β=3.00e-04 | train tot 1.0294 recon 0.4324 kl 198.5420
+                          |   val  tot 2.1034 recon 0.5969 kl 191.5676
+[SharedVAE] ep 016 β=3.20e-04 | train tot 1.0445 recon 0.4379 kl 191.3898
+                          |   val  tot 2.1111 recon 0.5964 kl 185.6114
+[SharedVAE] ep 017 β=3.40e-04 | train tot 0.9122 recon 0.4117 kl 179.9176
+                          |   val  tot 2.1034 recon 0.5952 kl 174.4926
+[SharedVAE] ep 018 β=3.60e-04 | train tot 1.0413 recon 0.4373 kl 177.3343
+                          |   val  tot 2.0881 recon 0.5938 kl 174.2560
+[SharedVAE] ep 019 β=3.80e-04 | train tot 0.9845 recon 0.4252 kl 175.0919
+                          |   val  tot 2.0947 recon 0.5944 kl 166.0194
+[SharedVAE] ep 020 β=4.00e-04 | train tot 1.0470 recon 0.4392 kl 169.7765
+                          |   val  tot 2.0787 recon 0.5936 kl 169.3834
+[SharedVAE] ep 021 β=4.20e-04 | train tot 1.0031 recon 0.4301 kl 166.2394
+                          |   val  tot 2.0787 recon 0.5932 kl 158.5543
+[SharedVAE] ep 022 β=4.40e-04 | train tot 1.0356 recon 0.4404 kl 158.4141
+                          |   val  tot 2.0756 recon 0.5925 kl 156.2675
+[SharedVAE] ep 023 β=4.60e-04 | train tot 1.0570 recon 0.4429 kl 157.4374
+                          |   val  tot 2.0679 recon 0.5950 kl 153.3526
+[SharedVAE] ep 024 β=4.80e-04 | train tot 0.9868 recon 0.4344 kl 149.0876
+                          |   val  tot 2.0720 recon 0.5934 kl 143.8193
+[SharedVAE] ep 025 β=5.00e-04 | train tot 0.9869 recon 0.4315 kl 146.1551
+                          |   val  tot 2.0806 recon 0.5951 kl 144.6507
+[SharedVAE] ep 026 β=5.20e-04 | train tot 1.0032 recon 0.4367 kl 143.8692
+                          |   val  tot 2.0726 recon 0.5944 kl 138.2223
+[SharedVAE] ep 027 β=5.40e-04 | train tot 1.0043 recon 0.4389 kl 139.7398
+                          |   val  tot 2.0744 recon 0.5949 kl 139.4210
+[SharedVAE] ep 028 β=5.60e-04 | train tot 1.0573 recon 0.4522 kl 137.6162
+                          |   val  tot 2.0718 recon 0.5950 kl 133.0419
+[SharedVAE] ep 029 β=5.80e-04 | train tot 1.0306 recon 0.4445 kl 133.9932
+                          |   val  tot 2.0614 recon 0.5965 kl 130.1232
+[SharedVAE] ep 030 β=6.00e-04 | train tot 0.9800 recon 0.4345 kl 131.1642
+                          |   val  tot 2.0672 recon 0.5930 kl 121.2345
+[SharedVAE] ep 031 β=6.20e-04 | train tot 1.0979 recon 0.4641 kl 128.4409
+                          |   val  tot 2.0683 recon 0.5944 kl 127.9448
+[SharedVAE] ep 032 β=6.40e-04 | train tot 0.9678 recon 0.4347 kl 125.3205
+                          |   val  tot 2.0641 recon 0.5962 kl 120.2215
+[SharedVAE] ep 033 β=6.60e-04 | train tot 1.0147 recon 0.4446 kl 121.1693
+                          |   val  tot 2.0582 recon 0.5953 kl 123.4175
+[SharedVAE] ep 034 β=6.80e-04 | train tot 0.8908 recon 0.4181 kl 117.0713
+                          |   val  tot 2.0522 recon 0.5956 kl 109.7422
+[SharedVAE] ep 035 β=7.00e-04 | train tot 1.0142 recon 0.4472 kl 116.6740
+                          |   val  tot 2.0567 recon 0.5953 kl 110.4175
+[SharedVAE] ep 036 β=7.20e-04 | train tot 0.9885 recon 0.4441 kl 112.7199
+                          |   val  tot 2.0604 recon 0.5981 kl 111.1715
+[SharedVAE] ep 037 β=7.40e-04 | train tot 1.0267 recon 0.4516 kl 112.9182
+                          |   val  tot 2.0628 recon 0.5979 kl 105.6379
+[SharedVAE] ep 038 β=7.60e-04 | train tot 1.0395 recon 0.4551 kl 111.3237
+                          |   val  tot 2.0618 recon 0.5974 kl 101.9931
+[SharedVAE] ep 039 β=7.80e-04 | train tot 0.9620 recon 0.4396 kl 106.7692
+                          |   val  tot 2.0586 recon 0.5950 kl 106.1588
+[SharedVAE] ep 040 β=8.00e-04 | train tot 1.0710 recon 0.4651 kl 107.7069
+                          |   val  tot 2.0629 recon 0.5976 kl 99.6353
+[SharedVAE] ep 041 β=8.20e-04 | train tot 0.9149 recon 0.4295 kl 101.0629
+                          |   val  tot 2.0584 recon 0.5972 kl 97.3697
+[SharedVAE] ep 042 β=8.40e-04 | train tot 1.0208 recon 0.4548 kl 102.6276
+                          |   val  tot 2.0619 recon 0.5970 kl 94.3544
+[SharedVAE] ep 043 β=8.60e-04 | train tot 1.0408 recon 0.4596 kl 101.0127
+                          |   val  tot 2.0551 recon 0.5974 kl 96.9328
+[SharedVAE] ep 044 β=8.80e-04 | train tot 1.0285 recon 0.4574 kl 98.9360
+                          |   val  tot 2.0577 recon 0.5986 kl 99.3930
+[SharedVAE] ep 045 β=9.00e-04 | train tot 0.9614 recon 0.4396 kl 98.0385
+                          |   val  tot 2.0550 recon 0.5983 kl 85.0464
+[SharedVAE] ep 046 β=9.20e-04 | train tot 0.9715 recon 0.4435 kl 94.4475
+                          |   val  tot 2.0315 recon 0.5923 kl 90.5307
+[SharedVAE] ep 047 β=9.40e-04 | train tot 1.0722 recon 0.4671 kl 94.5405
+                          |   val  tot 2.0296 recon 0.5918 kl 89.6940
+[SharedVAE] ep 048 β=9.60e-04 | train tot 0.9579 recon 0.4385 kl 93.5994
+                          |   val  tot 2.0347 recon 0.5943 kl 85.0815
+[SharedVAE] ep 049 β=9.80e-04 | train tot 0.9667 recon 0.4427 kl 91.3767
+                          |   val  tot 2.0307 recon 0.5937 kl 83.0080
+[SharedVAE] ep 050 β=1.00e-03 | train tot 0.9300 recon 0.4353 kl 87.5221
+                          |   val  tot 2.0353 recon 0.5959 kl 88.1592
+[SharedVAE] ep 051 β=1.00e-03 | train tot 0.9309 recon 0.4331 kl 88.1629
+                          |   val  tot 2.0347 recon 0.5934 kl 86.8726
+[SharedVAE] ep 052 β=1.00e-03 | train tot 1.0059 recon 0.4537 kl 89.4438
+                          |   val  tot 2.0302 recon 0.5930 kl 85.9996
+[SharedVAE] ep 053 β=1.00e-03 | train tot 0.9970 recon 0.4493 kl 89.7585
+                          |   val  tot 2.0284 recon 0.5948 kl 84.1924
+[SharedVAE] ep 054 β=1.00e-03 | train tot 0.9624 recon 0.4424 kl 87.5257
+                          |   val  tot 2.0312 recon 0.5936 kl 88.2706
+[SharedVAE] ep 055 β=1.00e-03 | train tot 1.0334 recon 0.4583 kl 90.3918
+                          |   val  tot 2.0266 recon 0.5945 kl 82.5062
+[SharedVAE] ep 056 β=1.00e-03 | train tot 0.9582 recon 0.4430 kl 87.8144
+                          |   val  tot 2.0253 recon 0.5934 kl 82.2660
+[SharedVAE] ep 057 β=1.00e-03 | train tot 0.9368 recon 0.4379 kl 85.7462
+                          |   val  tot 2.0229 recon 0.5925 kl 82.9996
+[SharedVAE] ep 058 β=1.00e-03 | train tot 0.9347 recon 0.4372 kl 86.1249
+                          |   val  tot 2.0235 recon 0.5935 kl 81.7214
+[SharedVAE] ep 059 β=1.00e-03 | train tot 0.9956 recon 0.4522 kl 86.2022
+                          |   val  tot 2.0134 recon 0.5913 kl 83.7981
+[SharedVAE] ep 060 β=1.00e-03 | train tot 0.9768 recon 0.4465 kl 87.4036
+                          |   val  tot 2.0143 recon 0.5948 kl 79.7251
+[SharedVAE] ep 061 β=1.00e-03 | train tot 0.9690 recon 0.4482 kl 85.0051
+                          |   val  tot 2.0219 recon 0.5944 kl 81.0344
+[SharedVAE] ep 062 β=1.00e-03 | train tot 0.9919 recon 0.4540 kl 84.6972
+                          |   val  tot 2.0220 recon 0.5932 kl 83.2708
+[SharedVAE] ep 063 β=1.00e-03 | train tot 0.9377 recon 0.4353 kl 85.1697
+                          |   val  tot 2.0236 recon 0.5929 kl 83.0033
+[SharedVAE] ep 064 β=1.00e-03 | train tot 0.8459 recon 0.4147 kl 83.0272
+                          |   val  tot 2.0174 recon 0.5948 kl 77.7416
+[SharedVAE] ep 065 β=1.00e-03 | train tot 0.9421 recon 0.4382 kl 83.3716
+                          |   val  tot 2.0258 recon 0.5954 kl 80.3790
+[SharedVAE] ep 066 β=1.00e-03 | train tot 0.8437 recon 0.4159 kl 81.4161
+                          |   val  tot 2.0222 recon 0.5940 kl 76.3165
+[SharedVAE] ep 067 β=1.00e-03 | train tot 0.8960 recon 0.4296 kl 80.9163
+                          |   val  tot 2.0127 recon 0.5932 kl 78.5573
+[SharedVAE] ep 068 β=1.00e-03 | train tot 0.9221 recon 0.4374 kl 81.3168
+                          |   val  tot 2.0321 recon 0.5937 kl 80.2792
+[SharedVAE] ep 069 β=1.00e-03 | train tot 0.9206 recon 0.4325 kl 83.0279
+                          |   val  tot 2.0171 recon 0.5933 kl 78.3976
+[SharedVAE] ep 070 β=1.00e-03 | train tot 1.0001 recon 0.4548 kl 83.1967
+                          |   val  tot 2.0233 recon 0.5939 kl 79.4330
+[SharedVAE] ep 071 β=1.00e-03 | train tot 0.8980 recon 0.4270 kl 82.8077
+                          |   val  tot 2.0231 recon 0.5937 kl 76.1791
+[SharedVAE] ep 072 β=1.00e-03 | train tot 0.9794 recon 0.4497 kl 82.0245
+                          |   val  tot 2.0196 recon 0.5940 kl 80.7040
+[SharedVAE] ep 073 β=1.00e-03 | train tot 0.8966 recon 0.4284 kl 81.4617
+                          |   val  tot 2.0135 recon 0.5943 kl 78.8527
+[SharedVAE] ep 074 β=1.00e-03 | train tot 1.0664 recon 0.4718 kl 83.7674
+                          |   val  tot 2.0072 recon 0.5920 kl 79.5117
+[SharedVAE] ep 075 β=1.00e-03 | train tot 0.9354 recon 0.4369 kl 82.6634
+                          |   val  tot 2.0192 recon 0.5958 kl 78.1611
+[SharedVAE] ep 076 β=1.00e-03 | train tot 1.0088 recon 0.4576 kl 82.7674
+                          |   val  tot 2.0065 recon 0.5919 kl 80.9936
+[SharedVAE] ep 077 β=1.00e-03 | train tot 0.8936 recon 0.4270 kl 80.7163
+                          |   val  tot 2.0132 recon 0.5940 kl 78.1814
+[SharedVAE] ep 078 β=1.00e-03 | train tot 0.8818 recon 0.4254 kl 80.2828
+                          |   val  tot 2.0087 recon 0.5942 kl 74.7971
+[SharedVAE] ep 079 β=1.00e-03 | train tot 0.9184 recon 0.4340 kl 80.2525
+                          |   val  tot 2.0209 recon 0.5934 kl 77.9315
+[SharedVAE] ep 080 β=1.00e-03 | train tot 0.9427 recon 0.4389 kl 81.6465
+                          |   val  tot 2.0196 recon 0.5932 kl 74.5074
+[SharedVAE] ep 081 β=1.00e-03 | train tot 0.8818 recon 0.4285 kl 78.0781
+                          |   val  tot 2.0183 recon 0.5925 kl 77.9424
+[SharedVAE] ep 082 β=1.00e-03 | train tot 0.9696 recon 0.4476 kl 80.9199
+                          |   val  tot 2.0160 recon 0.5909 kl 76.9961
+[SharedVAE] ep 083 β=1.00e-03 | train tot 0.9851 recon 0.4520 kl 80.3045
+                          |   val  tot 2.0126 recon 0.5935 kl 78.0270
+[SharedVAE] ep 084 β=1.00e-03 | train tot 0.8388 recon 0.4155 kl 78.8116
+                          |   val  tot 2.0157 recon 0.5924 kl 73.2301
+[SharedVAE] ep 085 β=1.00e-03 | train tot 0.9910 recon 0.4539 kl 79.5774
+                          |   val  tot 2.0065 recon 0.5937 kl 76.8650
+[SharedVAE] ep 086 β=1.00e-03 | train tot 0.9460 recon 0.4435 kl 78.9980
+                          |   val  tot 2.0111 recon 0.5929 kl 77.1483
+[SharedVAE] ep 087 β=1.00e-03 | train tot 0.9121 recon 0.4302 kl 79.7319
+                          |   val  tot 2.0168 recon 0.5928 kl 75.8858
+[SharedVAE] ep 088 β=1.00e-03 | train tot 0.9671 recon 0.4454 kl 80.6116
+                          |   val  tot 2.0014 recon 0.5899 kl 76.4735
+[SharedVAE] ep 089 β=1.00e-03 | train tot 0.9814 recon 0.4500 kl 79.6110
+                          |   val  tot 1.9943 recon 0.5897 kl 77.9492
+[SharedVAE] ep 090 β=1.00e-03 | train tot 0.8212 recon 0.4073 kl 79.3491
+                          |   val  tot 2.0065 recon 0.5917 kl 73.2603
+[SharedVAE] ep 091 β=1.00e-03 | train tot 0.8364 recon 0.4121 kl 77.4717
+                          |   val  tot 1.9993 recon 0.5907 kl 71.9720
+[SharedVAE] ep 092 β=1.00e-03 | train tot 0.9211 recon 0.4384 kl 77.8830
+                          |   val  tot 1.9878 recon 0.5906 kl 73.8547
+[SharedVAE] ep 093 β=1.00e-03 | train tot 0.9656 recon 0.4459 kl 78.7538
+                          |   val  tot 1.9963 recon 0.5908 kl 73.2274
+[SharedVAE] ep 094 β=1.00e-03 | train tot 1.0006 recon 0.4545 kl 79.2397
+                          |   val  tot 1.9976 recon 0.5909 kl 76.5151
+[SharedVAE] ep 095 β=1.00e-03 | train tot 0.9203 recon 0.4336 kl 79.3446
+                          |   val  tot 1.9992 recon 0.5904 kl 75.7438
+[SharedVAE] ep 096 β=1.00e-03 | train tot 0.9027 recon 0.4300 kl 78.8243
+                          |   val  tot 1.9951 recon 0.5926 kl 73.1505
+[SharedVAE] ep 097 β=1.00e-03 | train tot 0.9163 recon 0.4343 kl 77.8116
+                          |   val  tot 2.0001 recon 0.5900 kl 75.0380
+[SharedVAE] ep 098 β=1.00e-03 | train tot 0.8960 recon 0.4270 kl 78.7704
+                          |   val  tot 1.9917 recon 0.5916 kl 72.5990
+[SharedVAE] ep 099 β=1.00e-03 | train tot 0.8662 recon 0.4208 kl 76.8502
+                          |   val  tot 2.0052 recon 0.5887 kl 73.9233
+[SharedVAE] ep 100 β=1.00e-03 | train tot 0.9424 recon 0.4409 kl 78.1533
+                          |   val  tot 1.9971 recon 0.5893 kl 74.0805
+[Saved] Shared model checkpoint → checkpoints/modified_vae/shared_model_ep100.pt
+  Loss curves saved → checkpoints/modified_vae/loss_curves.png
+
+Done. SharedVAE saved to checkpoints/modified_vae/
+[6/6] Training Modified Shared CVAE...
+Device: cpu
+Modalities: ['rna', 'methylation']
+Samples: train=6409 val=798 test=800
+Primary sites: 54 classes
+
+============================================================
+Running: baseline  overrides: (baseline)
+  best_val=1.9143  train@best=0.9719  gap=0.9424  epoch=100/100  time=340s
+
+======================================================================
+Experiment                  best_val  train@best      gap    ep  total_ep
+----------------------------------------------------------------------
+baseline                      1.9143      0.9719   0.9424   100       100
+
+Results saved → checkpoints/modified_cvae/cvae_experiments_20260323_152156.json
+Training completed for all 6 variants.

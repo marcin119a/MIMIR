@@ -20,7 +20,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from .cvae import CVAEConditionedDecoder, CVAEConditionedEncoder
-from .mae_masked import ProjectionHead, ReverseProjectionHead, apply_modality_dropout
+from .mae_masked import ProjectionHead, ReverseProjectionHead, apply_modality_dropout, contrastive_loss
 
 
 # ─── Model ────────────────────────────────────────────────────────────────────
@@ -144,20 +144,8 @@ def _contrastive_loss(
     embeddings: Dict[str, torch.Tensor],
     temperature: float = 0.1,
 ) -> torch.Tensor:
-    mods = list(embeddings.keys())
-    if len(mods) < 2:
-        return next(iter(embeddings.values())).new_tensor(0.0)
-    loss, count = 0.0, 0
-    for i in range(len(mods)):
-        for j in range(i + 1, len(mods)):
-            z1, z2 = embeddings[mods[i]], embeddings[mods[j]]
-            labels = torch.arange(z1.size(0), device=z1.device)
-            sim_ab = F.cosine_similarity(z1.unsqueeze(1), z2.unsqueeze(0), dim=-1) / temperature
-            loss += F.cross_entropy(sim_ab, labels)
-            sim_ba = F.cosine_similarity(z2.unsqueeze(1), z1.unsqueeze(0), dim=-1) / temperature
-            loss += F.cross_entropy(sim_ba, labels)
-            count += 2
-    return loss / max(count, 1)
+    # Use the unified advanced contrastive loss (NT-Xent + Triplet Hard Neg) from mae_masked
+    return contrastive_loss(embeddings, temperature=temperature)
 
 
 def _imputation_loss(

@@ -236,7 +236,10 @@ def impute_shared_crossmodal(
         end = min(start + batch_size, N)
         xb = torch.tensor(src_input[start:end], device=device)
         h = model.encoders[source_mod](xb)
-        z = model.projections[source_mod](h)
+        if hasattr(model, "proj_mu"):
+            z = model.proj_mu[source_mod](h)
+        else:
+            z = model.projections[source_mod](h)
         h_hat = model.rev_projections[target_mod](z)
         x_imp = model.decoders[target_mod](h_hat)
         all_preds.append(x_imp.cpu().numpy())
