@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import kagglehub
 from sklearn.preprocessing import LabelEncoder
-from src.config import Config
+from config import Config
 
 def download_datasets():
     """Download datasets from Kaggle"""
@@ -137,31 +137,69 @@ def merge_and_normalize_data(rna_df, dna_df, top_n_sites=24):
     return merged_df, label_encoder
 
 
+def build_multi_omic_dict(merged_df):
+    """
+    Convert the flat merged DataFrame into the dict format expected by
+    train_autoencoders.py and train_shared.py:
+
+        {
+            "rna":         pd.DataFrame  [n_samples x n_rna_features],   index=case_barcode
+            "methylation": pd.DataFrame  [n_samples x n_meth_features],  index=case_barcode
+        }
+    """
+    print("\nBuilding multi-omic dict for training scripts...")
+
+    rna_matrix = np.stack(merged_df["tpm_unstranded"].values)   # (N, 1177)
+    meth_matrix = np.stack(merged_df["beta_value"].values)       # (N, 1211)
+    index = merged_df["case_barcode"].values
+
+    rna_df_out  = pd.DataFrame(rna_matrix,  index=index,
+                               columns=[f"rna_{i}"  for i in range(rna_matrix.shape[1])])
+    meth_df_out = pd.DataFrame(meth_matrix, index=index,
+                               columns=[f"meth_{i}" for i in range(meth_matrix.shape[1])])
+
+    rna_df_out.index.name  = "case_barcode"
+    meth_df_out.index.name = "case_barcode"
+
+    print(f"  RNA matrix:         {rna_df_out.shape}")
+    print(f"  Methylation matrix: {meth_df_out.shape}")
+
+    return {"rna": rna_df_out, "methylation": meth_df_out}
+
+
 def main():
     """Main data preparation pipeline"""
     # Download datasets
     rna_path, dna_path = download_datasets()
-    
+
     # Prepare individual datasets
     rna_df = prepare_rna_data(rna_path)
     dna_df = prepare_dna_methylation_data(dna_path)
-    
+
     # Merge and normalize
     merged_df, label_encoder = merge_and_normalize_data(rna_df, dna_df)
-    
+
     # Save processed data
     print("\nSaving processed data...")
     os.makedirs('data', exist_ok=True)
     merged_df.to_pickle('data/processed_data.pkl')
-    
+
     # Save label encoder
     import pickle
     with open('data/label_encoder.pkl', 'wb') as f:
         pickle.dump(label_encoder, f)
-    
+
+    # Build and save multi-omic dict for train_autoencoders.py / train_shared.py
+    multi_omic = build_multi_omic_dict(merged_df)
+    multi_omic_path = 'data/tcga_redo_mlomicZ.pkl'
+    with open(multi_omic_path, 'wb') as f:
+        pickle.dump(multi_omic, f)
+    print(f"Multi-omic dict saved to: {multi_omic_path}")
+
     print("\nData preparation complete!")
     print(f"Processed data saved to: data/processed_data.pkl")
     print(f"Label encoder saved to: data/label_encoder.pkl")
+    print(f"Multi-omic dict saved to: {multi_omic_path}")
     print(f"\nAdditional files (if any unmatched records):")
     print(f"  - data/rna_only_unmatched.pkl (RNA samples without DNA)")
     print(f"  - data/dna_only_unmatched.pkl (DNA samples without RNA)")
