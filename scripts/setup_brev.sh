@@ -57,6 +57,17 @@ ensure_conda() {
         CONDA_CMD="conda"; return
     fi
 
+    # Miniforge3 may already be installed but not on PATH — try sourcing it
+    if [[ -f "$HOME/miniforge3/etc/profile.d/conda.sh" ]]; then
+        source "$HOME/miniforge3/etc/profile.d/conda.sh"
+        export PATH="$HOME/miniforge3/bin:$PATH"
+        if command -v mamba &>/dev/null; then
+            CONDA_CMD="mamba"; ok "Miniforge3 already installed"; return
+        elif command -v conda &>/dev/null; then
+            CONDA_CMD="conda"; ok "Miniforge3 already installed"; return
+        fi
+    fi
+
     info "Installing Miniforge3..."
     local installer
     case "$OS" in
