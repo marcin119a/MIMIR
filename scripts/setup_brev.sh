@@ -106,6 +106,33 @@ info "Installing Unsloth Studio..."
 uv pip install unsloth-studio 2>/dev/null || uv pip install jupyterlab ipywidgets
 ok "Unsloth Studio installed"
 
+# ── Create the dedicated studio venv that `unsloth studio` expects ────────────
+STUDIO_VENV="${HOME}/.unsloth/studio/unsloth_studio"
+if [[ ! -x "${STUDIO_VENV}/bin/python" ]]; then
+    info "Creating Unsloth Studio venv at ${STUDIO_VENV}..."
+    mkdir -p "${HOME}/.unsloth/studio"
+    uv venv "${STUDIO_VENV}" --python "${PYTHON_VERSION}"
+    ok "Studio venv created"
+fi
+
+# Find and run setup.sh bundled with the installed unsloth_cli package
+STUDIO_SETUP=$(python -c "
+import importlib.util, pathlib
+spec = importlib.util.find_spec('studio')
+if spec and spec.submodule_search_locations:
+    p = pathlib.Path(list(spec.submodule_search_locations)[0]) / 'setup.sh'
+    if p.is_file():
+        print(p)
+" 2>/dev/null || true)
+
+if [[ -n "${STUDIO_SETUP}" ]]; then
+    info "Running Unsloth Studio setup..."
+    bash "${STUDIO_SETUP}" || warn "Studio setup encountered issues — see above"
+    ok "Unsloth Studio setup complete"
+else
+    warn "studio/setup.sh not found — skipping Studio dependency install"
+fi
+
 # ── Install & configure nginx ─────────────────────────────────────────────────
 install_nginx() {
     if command -v nginx &>/dev/null; then
@@ -209,10 +236,12 @@ echo ""
 JUPYTER_BIN="${VENV_DIR}/bin/jupyter"
 UNSLOTH_BIN="${VENV_DIR}/bin/unsloth"
 
-if command -v unsloth &>/dev/null && unsloth --help 2>&1 | grep -q studio; then
+if [[ -x "${UNSLOTH_BIN}" ]] && "${UNSLOTH_BIN}" --help 2>&1 | grep -q studio; then
     LAUNCH_CMD="${UNSLOTH_BIN} studio -H ${HOST} -p ${PORT}"
-else
+elif [[ -x "${JUPYTER_BIN}" ]]; then
     LAUNCH_CMD="${JUPYTER_BIN} lab --ip=${HOST} --port=${PORT} --no-browser --NotebookApp.token='' --NotebookApp.password=''"
+else
+    die "Neither unsloth nor jupyter found in ${VENV_DIR}/bin — installation incomplete"
 fi
 
 info "Creating systemd service for Unsloth Studio..."
