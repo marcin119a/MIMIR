@@ -55,6 +55,11 @@ BASE_CONFIG = dict(
     lambda_impute=1.0,
     gaussian_noise_std=0.0,
     grad_clip=1.0,
+    # overfitting diagnostics
+    tau=0.1,                  # contrastive temperature
+    freeze_proj_only=False,   # if True: freeze encoders/decoders, train only proj heads
+    proj_head_wd=None,        # if set: separate (higher) weight_decay for proj/rev_proj heads
+    early_stop_on="total_loss",  # metric key from eval dict to monitor
 )
 
 EXPERIMENTS = {
@@ -82,6 +87,27 @@ EXPERIMENTS = {
         lr=1e-4, weight_decay=1e-3,
         gaussian_noise_std=0.01,
     ),
+    # ── overfitting diagnostics ───────────────────────────────────────────────
+    # 1. Freeze encoders/decoders — train only proj + rev_proj heads
+    "freeze_proj_only":     dict(freeze_proj_only=True),
+    # 2. Lower lambda_contrastive
+    "low_contrast_03":      dict(lambda_contrast=0.3),
+    "low_contrast_01":      dict(lambda_contrast=0.1),
+    # 3. Softer temperature (tau)
+    "tau_02":               dict(tau=0.2),
+    "tau_03":               dict(tau=0.3),
+    # 4. Higher weight decay targeted at projection heads only
+    "proj_wd_1e2":          dict(proj_head_wd=1e-2),
+    "proj_wd_1e1":          dict(proj_head_wd=1e-1),
+    # 5. Reduce shared_dim — covered by small_shared_* above
+    # 6. Early-stop on val_contrast instead of val_total
+    "early_stop_contrast":  dict(early_stop_on="contrast_loss"),
+    # 7. Ablation: which loss block causes overfitting?
+    "recon_only":           dict(lambda_contrast=0.0, lambda_impute=0.0),
+    "recon_impute":         dict(lambda_contrast=0.0),
+    "recon_contrast_impute": {},  # same as baseline — explicit label for clarity
+    # combined: freeze + low contrast + softer tau
+    "freeze_low_contrast":  dict(freeze_proj_only=True, lambda_contrast=0.1, tau=0.2),
 }
 
 
@@ -153,14 +179,38 @@ def run_one_experiment(
 
     train_hist = {"total": [], "recon": [], "contrast": [], "impute": []}
     val_hist   = {"total": [], "recon": [], "contrast": [], "impute": []}
-    best_val_total = float("inf")
+    best_monitor_val = float("inf")
     best_model_state = None
     best_epoch = 0
     train_at_best = float("inf")
     epochs_no_improve = 0
     PATIENCE = 12
+    early_stop_metric = cfg.get("early_stop_on", "total_loss")  # key in eval dict
 
-    opt = torch.optim.AdamW(model.parameters(), lr=cfg["lr"], weight_decay=cfg["weight_decay"])
+    # ── Optionally freeze encoders/decoders ─────────────────────────────────
+    if cfg.get("freeze_proj_only", False):
+        for enc in model.encoders.values():
+            for p in enc.parameters():
+                p.requires_grad = False
+        for dec in model.decoders.values():
+            for p in dec.parameters():
+                p.requires_grad = False
+        trainable = [p for p in model.parameters() if p.requires_grad]
+        print(f"  [freeze_proj_only] trainable params: {sum(p.numel() for p in trainable):,}")
+        opt = torch.optim.AdamW(trainable, lr=cfg["lr"], weight_decay=cfg["weight_decay"])
+    elif cfg.get("proj_head_wd") is not None:
+        # Differential weight decay: higher WD on projection heads only
+        proj_params = list(model.projections.parameters()) + list(model.rev_projections.parameters())
+        proj_ids = {id(p) for p in proj_params}
+        other_params = [p for p in model.parameters() if id(p) not in proj_ids]
+        opt = torch.optim.AdamW([
+            {"params": other_params,  "weight_decay": cfg["weight_decay"]},
+            {"params": proj_params,   "weight_decay": cfg["proj_head_wd"]},
+        ], lr=cfg["lr"])
+        print(f"  [proj_head_wd] proj WD={cfg['proj_head_wd']}, rest WD={cfg['weight_decay']}")
+    else:
+        opt = torch.optim.AdamW(model.parameters(), lr=cfg["lr"], weight_decay=cfg["weight_decay"])
+
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode="min", patience=5, factor=0.5)
 
     t0 = time.time()
@@ -175,6 +225,7 @@ def run_one_experiment(
             alpha_mask_recon=cfg["alpha_mask_recon"],
             grad_clip=cfg["grad_clip"],
             gaussian_noise_std=cfg["gaussian_noise_std"],
+            tau=cfg["tau"],
         )
         vl = conditional_eval_finetune_epoch(
             model=model, dataloader=val_loader, device=device,
@@ -183,6 +234,7 @@ def run_one_experiment(
             lambda_impute=cfg["lambda_impute"],
             feature_mask_p=cfg["feature_mask_p_val"],
             alpha_mask_recon=cfg["alpha_mask_recon"],
+            tau=cfg["tau"],
         )
 
         for k_src, k_dst in [("total_loss", "total"), ("recon_loss", "recon"),
@@ -192,8 +244,9 @@ def run_one_experiment(
 
         scheduler.step(vl["total_loss"])
 
-        if vl["total_loss"] < best_val_total:
-            best_val_total = vl["total_loss"]
+        monitor_val = vl.get(early_stop_metric, vl["total_loss"])
+        if monitor_val < best_monitor_val:
+            best_monitor_val = monitor_val
             best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             best_epoch = ep + 1
             train_at_best = tr["total_loss"]
@@ -211,6 +264,7 @@ def run_one_experiment(
         model.load_state_dict({k: v.to(device) for k, v in best_model_state.items()})
 
     total_epochs_run = len(train_hist["total"])
+    best_val_total = val_hist["total"][best_epoch - 1] if best_epoch > 0 else float("inf")
     gap_at_best = best_val_total - train_at_best
 
     with open(os.path.join(exp_dir, "loss_history.json"), "w") as f:
@@ -223,19 +277,22 @@ def run_one_experiment(
     torch.save(model.state_dict(), os.path.join(exp_dir, "model_best.pt"))
 
     result = {
-        "exp_name":       exp_name,
-        "best_val_total": round(best_val_total, 6),
-        "train_at_best":  round(train_at_best, 6),
-        "gap_at_best":    round(gap_at_best, 6),
-        "best_epoch":     best_epoch,
-        "total_epochs":   total_epochs_run,
-        "elapsed_s":      round(elapsed, 1),
-        "config":         cfg,
+        "exp_name":        exp_name,
+        "early_stop_on":   early_stop_metric,
+        "best_monitor":    round(best_monitor_val, 6),
+        "best_val_total":  round(best_val_total, 6),
+        "train_at_best":   round(train_at_best, 6),
+        "gap_at_best":     round(gap_at_best, 6),
+        "best_epoch":      best_epoch,
+        "total_epochs":    total_epochs_run,
+        "elapsed_s":       round(elapsed, 1),
+        "config":          cfg,
     }
 
     print(
-        f"  best_val={best_val_total:.4f}  train@best={train_at_best:.4f}  "
-        f"gap={gap_at_best:.4f}  epoch={best_epoch}/{total_epochs_run}  time={elapsed:.0f}s"
+        f"  best_val_total={best_val_total:.4f}  train@best={train_at_best:.4f}  "
+        f"gap={gap_at_best:.4f}  epoch={best_epoch}/{total_epochs_run}  "
+        f"[stop_on={early_stop_metric}: {best_monitor_val:.4f}]  time={elapsed:.0f}s"
     )
     return result
 

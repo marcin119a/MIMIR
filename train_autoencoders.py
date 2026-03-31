@@ -87,10 +87,12 @@ def train_one_modality(
     activation_dropout=0.05, mask_p=0.3,
     l1_alpha=1e-4, alpha_mask=0.5,
     use_batchnorm=True, grad_clip=1.0,
-    patience=15,
+    patience=15, gaussian_noise_std=0.0,
 ):
     print(f"\n{'='*60}")
     print(f"  Training {name} autoencoder  |  epochs={n_epochs}  |  hidden={hidden_layers}")
+    print(f"  mask_p={mask_p}  alpha_mask={alpha_mask}  gaussian_noise_std={gaussian_noise_std}")
+    print(f"  dropout={activation_dropout}  weight_decay={weight_decay}  l1_alpha={l1_alpha}")
     print(f"  batchnorm={use_batchnorm}  grad_clip={grad_clip}  patience={patience}")
     print(f"{'='*60}")
 
@@ -101,15 +103,16 @@ def train_one_modality(
     input_dim = data_df.shape[1]
 
     config = {
-        "input_dim":          input_dim,
-        "hidden_layers":      hidden_layers,
-        "activation_dropout": activation_dropout,
-        "denoising":          True,
-        "mask_p":             mask_p,
-        "tied":               False,
-        "mask_value":         mask_value,
-        "loss_on_masked":     True,
-        "use_batchnorm":      use_batchnorm,
+        "input_dim":           input_dim,
+        "hidden_layers":       hidden_layers,
+        "activation_dropout":  activation_dropout,
+        "denoising":           True,
+        "mask_p":              mask_p,
+        "tied":                False,
+        "mask_value":          mask_value,
+        "loss_on_masked":      True,
+        "use_batchnorm":       use_batchnorm,
+        "gaussian_noise_std":  gaussian_noise_std,
     }
 
     ae, _ = build_pretrain_ae_for_modality(
@@ -118,6 +121,7 @@ def train_one_modality(
         denoising=True, mask_p=mask_p, tied=False,
         mask_value=mask_value, loss_on_masked=True,
         use_batchnorm=use_batchnorm,
+        gaussian_noise_std=gaussian_noise_std,
     )
     ae = ae.to(device)
     opt = AdamW(ae.parameters(), lr=lr, weight_decay=weight_decay)
@@ -195,8 +199,21 @@ def parse_args():
     p = argparse.ArgumentParser(description="Phase 1: Train per-modality autoencoders")
     p.add_argument("--data",   default="data/tcga_redo_mlomicZ.pkl", help="Path to multi-omic pickle")
     p.add_argument("--splits", default="data/splits.json",           help="Path to splits JSON (optional)")
-    p.add_argument("--out",    default="aes_redo_z",            help="Output directory for checkpoints")
-    p.add_argument("--device", default=None,                    help="cuda / cpu (auto-detected if omitted)")
+    p.add_argument("--out",    default="aes_redo_z",                 help="Output directory for checkpoints")
+    p.add_argument("--device", default=None,                         help="cuda / cpu (auto-detected if omitted)")
+    # Denoising
+    p.add_argument("--mask_p",             type=float, default=0.3,  help="Feature masking probability (0.3–0.5)")
+    p.add_argument("--alpha_mask",         type=float, default=0.5,  help="Weight on masked MSE in loss (0=overall only, 1=masked only)")
+    p.add_argument("--gaussian_noise_std", type=float, default=0.0,  help="Std of Gaussian noise added to non-masked features")
+    # Regularization
+    p.add_argument("--activation_dropout", type=float, default=0.05, help="Dropout after each hidden activation")
+    p.add_argument("--weight_decay",       type=float, default=1e-4, help="AdamW weight decay")
+    p.add_argument("--l1_alpha",           type=float, default=1e-4, help="L1 sparsity penalty on latent")
+    # Training control
+    p.add_argument("--epochs",   type=int,   default=100)
+    p.add_argument("--patience", type=int,   default=15,   help="Early stopping patience (epochs without val_masked improvement)")
+    p.add_argument("--batch_size", type=int, default=128)
+    p.add_argument("--lr",       type=float, default=1e-3)
     return p.parse_args()
 
 
@@ -236,11 +253,23 @@ def main():
     )
 
     # ── Per-modality configs ─────────────────────────────────────────────────
+    shared_overrides = dict(
+        n_epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        weight_decay=args.weight_decay,
+        activation_dropout=args.activation_dropout,
+        mask_p=args.mask_p,
+        l1_alpha=args.l1_alpha,
+        alpha_mask=args.alpha_mask,
+        patience=args.patience,
+        gaussian_noise_std=args.gaussian_noise_std,
+    )
     modality_configs = [
-        dict(name="rna",  key="rna",         hidden_layers=[1024, 512], n_epochs=100, mask_value=0.0,
-             use_batchnorm=True, grad_clip=1.0, patience=15),
-        dict(name="mth",  key="methylation", hidden_layers=[512, 256],  n_epochs=100, mask_value=0.0,
-             use_batchnorm=True, grad_clip=1.0, patience=15),
+        dict(name="rna",  key="rna",         hidden_layers=[1024, 512], mask_value=0.0,
+             use_batchnorm=True, grad_clip=1.0, **shared_overrides),
+        dict(name="mth",  key="methylation", hidden_layers=[512, 256],  mask_value=0.0,
+             use_batchnorm=True, grad_clip=1.0, **shared_overrides),
     ]
 
     for cfg in modality_configs:

@@ -28,7 +28,7 @@ def run_shared_finetune(
     lr: float = 3e-4,
     weight_decay: float = 1e-4,
     epochs: int = 100,
-    lambda_contrast: float = 1.0,
+    lambda_contrast: float = 0.3,
     lambda_impute: float = 1.0,
     modality_dropout_prob: float = 0.3,
     feature_mask_p_train: float = 0.2,
@@ -36,12 +36,15 @@ def run_shared_finetune(
     alpha_mask_recon: float = 0.5,
     two_path_clean_for_contrast: bool = False,
     freeze_encoders_decoders: bool = False,
+    freeze_decoders_only: bool = False,
     proj_activation_dropout: float = 0.1,
     grad_clip: float = 1.0,
     early_stopping_patience: int = 20,
     lr_scheduler_patience: int = 10,
     lr_scheduler_factor: float = 0.5,
     gaussian_noise_std: float = 0.0,
+    tau: float = 0.3,
+    loss_mode: str = "cosine",
     verbose: bool = True,
 ) -> Tuple[
     "MultiModalWithSharedSpace",
@@ -106,6 +109,10 @@ def run_shared_finetune(
             p.requires_grad = False
         model.encoders.eval()
         model.decoders.eval()
+    elif freeze_decoders_only:
+        for p in model.decoders.parameters():
+            p.requires_grad = False
+        model.decoders.eval()
 
     # 5) Optimizer + scheduler
     opt = torch.optim.Adam(
@@ -114,7 +121,7 @@ def run_shared_finetune(
         weight_decay=weight_decay
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        opt, mode="min", patience=lr_scheduler_patience, factor=lr_scheduler_factor, verbose=verbose
+        opt, mode="min", patience=lr_scheduler_patience, factor=lr_scheduler_factor
     )
 
     # 6) Train/eval loops with early stopping
@@ -140,6 +147,8 @@ def run_shared_finetune(
             two_path_clean_for_contrast=two_path_clean_for_contrast,
             grad_clip=grad_clip,
             gaussian_noise_std=gaussian_noise_std,
+            tau=tau,
+            loss_mode=loss_mode,
         )
 
         val_stats = eval_finetune_epoch(
@@ -152,6 +161,8 @@ def run_shared_finetune(
             feature_mask_p=feature_mask_p_val,
             alpha_mask_recon=alpha_mask_recon,
             two_path_clean_for_contrast=two_path_clean_for_contrast,
+            tau=tau,
+            loss_mode=loss_mode,
         )
 
         for k_src, k_dst in [
