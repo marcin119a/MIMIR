@@ -3,7 +3,7 @@
 # Tested on NVIDIA Brev (Ubuntu 22.04 + CUDA 12.x)
 set -euo pipefail
 
-REPO_URL="git@github.com:marcin119a/MIMIR.git"
+REPO_URL="https://github.com/marcin119a/MIMIR.git"
 REPO_DIR="MIMIR"
 
 # Google Drive folder IDs (from README)
