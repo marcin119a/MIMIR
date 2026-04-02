@@ -289,6 +289,7 @@ def conditional_finetune_epoch(
     alpha_mask_recon: float = 0.5,
     grad_clip: float = 1.0,
     gaussian_noise_std: float = 0.0,
+    tau: float = 0.1,
 ) -> Dict[str, float]:
     """
     One training epoch for ConditionalMultiModalWithSharedSpace.
@@ -313,7 +314,7 @@ def conditional_finetune_epoch(
         shared_emb, recons, _, mu_dict, logvar_dict = model(noisy, batch_c, return_kl_params=True)
 
         r_loss, _ = _recon_loss(batch_clean, recons, orig_missing, art_masks, alpha_mask_recon)
-        c_loss = _contrastive_loss(shared_emb)
+        c_loss = _contrastive_loss(shared_emb, temperature=tau)
         i_loss, _ = _imputation_loss(batch_clean, shared_emb, model, orig_missing, batch_c)
         kl = _kl_loss(mu_dict, logvar_dict)
 
@@ -351,6 +352,7 @@ def conditional_eval_finetune_epoch(
     lambda_kl: float = 1.0,
     feature_mask_p: float = 0.1,
     alpha_mask_recon: float = 0.5,
+    tau: float = 0.1,
 ) -> Dict[str, float]:
     """
     One eval epoch for ConditionalMultiModalWithSharedSpace.
@@ -370,7 +372,7 @@ def conditional_eval_finetune_epoch(
         shared_emb, recons, _, mu_dict, logvar_dict = model(noisy, batch_c, return_kl_params=True)
 
         r_loss, _ = _recon_loss(batch_clean, recons, orig_missing, art_masks, alpha_mask_recon)
-        c_loss = _contrastive_loss(shared_emb)
+        c_loss = _contrastive_loss(shared_emb, temperature=tau)
         i_loss, _ = _imputation_loss(batch_clean, shared_emb, model, orig_missing, batch_c)
         kl = _kl_loss(mu_dict, logvar_dict)
 

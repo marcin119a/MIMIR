@@ -114,6 +114,7 @@ class ModalityAutoencoder(nn.Module):
                  mask_value: float = 0.0,
                  loss_on_masked: bool = True,
                  use_batchnorm: bool = False,
+                 gaussian_noise_std: float = 0.0,
                  ):
         super().__init__()
         self.denoising = denoising
@@ -121,6 +122,7 @@ class ModalityAutoencoder(nn.Module):
         self.tied = tied
         self.mask_value = mask_value
         self.loss_on_masked = loss_on_masked
+        self.gaussian_noise_std = gaussian_noise_std
         self._last_mask = None  # will store mask for the last forward pass
 
         self.encoder = ModalityEncoder(encoder_dims, activation_dropout, use_batchnorm=use_batchnorm)
@@ -137,12 +139,19 @@ class ModalityAutoencoder(nn.Module):
             self.decoder = ModalityDecoder(decoder_dims, activation_dropout, use_batchnorm=use_batchnorm)
 
     def _add_mask_noise(self, x):
-        if not self.training or not self.denoising or self.mask_p <= 0.0:
+        if not self.training or not self.denoising:
             self._last_mask = torch.zeros_like(x, dtype=torch.bool)
             return x
-        mask = torch.rand_like(x) < self.mask_p   # True where we mask
         x_noisy = x.clone()
-        x_noisy[mask] = self.mask_value
+        if self.mask_p > 0.0:
+            mask = torch.rand_like(x) < self.mask_p
+            x_noisy[mask] = self.mask_value
+        else:
+            mask = torch.zeros_like(x, dtype=torch.bool)
+        # Gaussian noise on non-masked positions
+        if self.gaussian_noise_std > 0.0:
+            noise = torch.randn_like(x) * self.gaussian_noise_std
+            x_noisy[~mask] = x_noisy[~mask] + noise[~mask]
         self._last_mask = mask
         return x_noisy
 
@@ -434,12 +443,32 @@ def reconstruction_loss_with_masks(
     return total, per_mod_loss
 
 
-def contrastive_loss(embeddings: Dict[str, torch.Tensor], temperature: float=0.1):
+def contrastive_loss(embeddings: Dict[str, torch.Tensor], temperature: float=0.1,
+                     loss_mode: str = "ntxent"):
+    """
+    Cross-modal alignment loss.
+
+    loss_mode="ntxent"  — NT-Xent (InfoNCE) instance-discrimination.
+                          Prone to overfitting (memorizes training pairs).
+    loss_mode="cosine"  — Cosine alignment: 1 - cos_sim(z_i, z_j).mean().
+                          No negatives, no batch-size dependency, generalizes better.
+    """
     mods = list(embeddings.keys())
     if len(mods) < 2:
         any_tensor = next(iter(embeddings.values()))
         return any_tensor.new_tensor(0.0)
 
+    if loss_mode == "cosine":
+        loss, count = 0.0, 0
+        for i in range(len(mods)):
+            for j in range(i + 1, len(mods)):
+                z1 = F.normalize(embeddings[mods[i]], dim=-1)
+                z2 = F.normalize(embeddings[mods[j]], dim=-1)
+                loss += (1.0 - (z1 * z2).sum(dim=-1)).mean()
+                count += 1
+        return loss / max(count, 1)
+
+    # default: ntxent
     loss = 0.0
     count = 0
     for i in range(len(mods)):
@@ -521,6 +550,8 @@ def finetune_epoch(
     two_path_clean_for_contrast: bool = False,
     grad_clip: float = 1.0,
     gaussian_noise_std: float = 0.0,
+    tau: float = 0.1,
+    loss_mode: str = "ntxent",
 ):
     model.train()
     sums = {"total":0.0, "recon":0.0, "contrast":0.0, "impute":0.0}
@@ -557,7 +588,7 @@ def finetune_epoch(
             )
 
             # Contrastive on clean embeddings
-            closs = contrastive_loss(shared_clean)
+            closs = contrastive_loss(shared_clean, temperature=tau, loss_mode=loss_mode)
 
             # Imputation from clean embeddings, ignoring true NaNs
             iloss, per_mod_impute = imputation_loss(
@@ -585,7 +616,7 @@ def finetune_epoch(
                 alpha_mask=alpha_mask_recon,
             )
 
-            closs = contrastive_loss(shared)
+            closs = contrastive_loss(shared, temperature=tau, loss_mode=loss_mode)
 
             iloss, per_mod_impute = imputation_loss(
                 target_batch=batch_clean,
@@ -637,6 +668,8 @@ def eval_finetune_epoch(
     feature_mask_p: float = 0.0,
     alpha_mask_recon: float = 0.5,
     two_path_clean_for_contrast: bool = False,
+    tau: float = 0.1,
+    loss_mode: str = "ntxent",
 ):
     model.eval()
     sums = {"total":0.0, "recon":0.0, "contrast":0.0, "impute":0.0}
@@ -663,7 +696,7 @@ def eval_finetune_epoch(
                     artificial_masks=artificial_masks,
                     alpha_mask=alpha_mask_recon,
                 )
-                closs = contrastive_loss(shared_clean)
+                closs = contrastive_loss(shared_clean, temperature=tau, loss_mode=loss_mode)
                 iloss, per_mod_impute = imputation_loss(
                     target_batch=batch_clean,
                     embeddings=shared_clean,
@@ -683,7 +716,7 @@ def eval_finetune_epoch(
                     artificial_masks=artificial_masks,
                     alpha_mask=alpha_mask_recon,
                 )
-                closs = contrastive_loss(shared)
+                closs = contrastive_loss(shared, temperature=tau, loss_mode=loss_mode)
                 iloss, per_mod_impute = imputation_loss(
                     target_batch=batch_clean,
                     embeddings=shared,
@@ -731,6 +764,7 @@ def build_pretrain_ae_for_modality(
     mask_value: float = 0.0,
     loss_on_masked: bool = True,
     use_batchnorm: bool = False,
+    gaussian_noise_std: float = 0.0,
 ) -> Tuple[ModalityAutoencoder, int]:
     """
     Returns (autoencoder, hidden_dim). Example:
@@ -753,6 +787,7 @@ def build_pretrain_ae_for_modality(
         mask_value=mask_value,
         loss_on_masked=loss_on_masked,
         use_batchnorm=use_batchnorm,
+        gaussian_noise_std=gaussian_noise_std,
     )
     return ae, hidden_dim
 
@@ -784,6 +819,7 @@ def load_modality_with_config(path: str, map_location=None):
         mask_value=config.get('mask_value', 0.0),
         loss_on_masked=config.get('loss_on_masked', True),
         use_batchnorm=config.get('use_batchnorm', False),
+        gaussian_noise_std=config.get('gaussian_noise_std', 0.0),
     )
     ae.load_state_dict(data['state_dict'])
     return ae, hidden_dim, config
