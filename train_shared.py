@@ -56,12 +56,12 @@ def parse_args():
     p.add_argument("--device",     default=None,                         help="cuda / cpu (auto-detected if omitted)")
     p.add_argument("--epochs",     type=int,   default=200)
     p.add_argument("--shared_dim", type=int,   default=256)
-    p.add_argument("--batch_size", type=int,   default=64)
+    p.add_argument("--batch_size", type=int,   default=256)
     p.add_argument("--lr",         type=float, default=3e-4)
-    p.add_argument("--weight_decay", type=float, default=1e-5)
-    p.add_argument("--lambda_contrast", type=float, default=0.3)
-    p.add_argument("--lambda_impute",   type=float, default=1.0)
-    p.add_argument("--tau",             type=float, default=0.3,
+    p.add_argument("--weight_decay", type=float, default=1e-4)
+    p.add_argument("--lambda_contrast", type=float, default=0.1)
+    p.add_argument("--lambda_impute",   type=float, default=0.3)
+    p.add_argument("--tau",             type=float, default=0.5,
                    help="Contrastive loss temperature (lower=sharper, higher=softer)")
     p.add_argument("--loss_mode",       default="cosine", choices=["ntxent", "cosine"],
                    help="Alignment loss: 'cosine' (no negatives, less overfit) or 'ntxent' (InfoNCE)")
