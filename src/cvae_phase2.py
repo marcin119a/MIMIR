@@ -20,7 +20,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from .cvae import CVAEConditionedDecoder, CVAEConditionedEncoder
-from .mae_masked import build_mlp, apply_modality_dropout
+from .mae_masked import build_mlp, apply_modality_dropout, contrastive_loss as _contrastive_loss_mae
 
 
 # ─── Conditional projection heads ────────────────────────────────────────────
@@ -208,21 +208,9 @@ def _recon_loss(
 def _contrastive_loss(
     embeddings: Dict[str, torch.Tensor],
     temperature: float = 0.1,
+    loss_mode: str = "cosine",
 ) -> torch.Tensor:
-    mods = list(embeddings.keys())
-    if len(mods) < 2:
-        return next(iter(embeddings.values())).new_tensor(0.0)
-    loss, count = 0.0, 0
-    for i in range(len(mods)):
-        for j in range(i + 1, len(mods)):
-            z1, z2 = embeddings[mods[i]], embeddings[mods[j]]
-            labels = torch.arange(z1.size(0), device=z1.device)
-            sim_ab = F.cosine_similarity(z1.unsqueeze(1), z2.unsqueeze(0), dim=-1) / temperature
-            loss += F.cross_entropy(sim_ab, labels)
-            sim_ba = F.cosine_similarity(z2.unsqueeze(1), z1.unsqueeze(0), dim=-1) / temperature
-            loss += F.cross_entropy(sim_ba, labels)
-            count += 2
-    return loss / max(count, 1)
+    return _contrastive_loss_mae(embeddings, temperature=temperature, loss_mode=loss_mode)
 
 
 def _imputation_loss(
@@ -290,6 +278,7 @@ def conditional_finetune_epoch(
     grad_clip: float = 1.0,
     gaussian_noise_std: float = 0.0,
     tau: float = 0.1,
+    loss_mode: str = "cosine",
 ) -> Dict[str, float]:
     """
     One training epoch for ConditionalMultiModalWithSharedSpace.
@@ -314,7 +303,7 @@ def conditional_finetune_epoch(
         shared_emb, recons, _, mu_dict, logvar_dict = model(noisy, batch_c, return_kl_params=True)
 
         r_loss, _ = _recon_loss(batch_clean, recons, orig_missing, art_masks, alpha_mask_recon)
-        c_loss = _contrastive_loss(shared_emb, temperature=tau)
+        c_loss = _contrastive_loss(shared_emb, temperature=tau, loss_mode=loss_mode)
         i_loss, _ = _imputation_loss(batch_clean, shared_emb, model, orig_missing, batch_c)
         kl = _kl_loss(mu_dict, logvar_dict)
 
@@ -353,6 +342,7 @@ def conditional_eval_finetune_epoch(
     feature_mask_p: float = 0.1,
     alpha_mask_recon: float = 0.5,
     tau: float = 0.1,
+    loss_mode: str = "cosine",
 ) -> Dict[str, float]:
     """
     One eval epoch for ConditionalMultiModalWithSharedSpace.
@@ -372,7 +362,7 @@ def conditional_eval_finetune_epoch(
         shared_emb, recons, _, mu_dict, logvar_dict = model(noisy, batch_c, return_kl_params=True)
 
         r_loss, _ = _recon_loss(batch_clean, recons, orig_missing, art_masks, alpha_mask_recon)
-        c_loss = _contrastive_loss(shared_emb, temperature=tau)
+        c_loss = _contrastive_loss(shared_emb, temperature=tau, loss_mode=loss_mode)
         i_loss, _ = _imputation_loss(batch_clean, shared_emb, model, orig_missing, batch_c)
         kl = _kl_loss(mu_dict, logvar_dict)
 

@@ -27,6 +27,7 @@ import torch
 from src.data_utils import compute_shared_splits, load_shared_splits_from_json
 from src.cvae import (
     ConditionalMultiOmicDataset,
+    build_pretrain_cvae_for_modality,
     extract_encoder_decoder_from_cvae,
     get_conditional_dataloader,
     load_conditions_from_json,
@@ -51,12 +52,13 @@ BASE_CONFIG = dict(
     feature_mask_p_train=0.2,
     feature_mask_p_val=0.2,
     alpha_mask_recon=0.5,
-    lambda_contrast=1.0,
-    lambda_impute=1.0,
+    lambda_contrast=0.1,
+    lambda_impute=0.3,
     gaussian_noise_std=0.0,
     grad_clip=1.0,
     # overfitting diagnostics
-    tau=0.1,                  # contrastive temperature
+    tau=0.5,                  # contrastive temperature
+    loss_mode="cosine",       # "cosine" or "ntxent"
     freeze_proj_only=False,   # if True: freeze encoders/decoders, train only proj heads
     proj_head_wd=None,        # if set: separate (higher) weight_decay for proj/rev_proj heads
     early_stop_on="total_loss",  # metric key from eval dict to monitor
@@ -142,15 +144,34 @@ def run_one_experiment(
     train_idx, val_idx,
     cvae_paths,
     device, epochs, batch_size, out_root,
+    random_init_encoders: bool = False,
 ):
     exp_dir = os.path.join(out_root, f"exp_{exp_name}")
     os.makedirs(exp_dir, exist_ok=True)
 
-    # ── Load CVAE encoders/decoders ──────────────────────────────────────────
+    # ── Load/build CVAE encoders/decoders ────────────────────────────────────
     encoders, decoders, hidden_dims, mask_values = {}, {}, {}, {}
     for mod, path in cvae_paths.items():
-        cvae_m, hidden_dim_m, cfg_m = load_cvae_with_config(path, map_location=device)
-        cvae_m = cvae_m.to(device)
+        if random_init_encoders:
+            # Load architecture config only — skip pretrained weights (random init)
+            _data = torch.load(path, map_location=device)
+            cfg_m = _data["config"]
+            cvae_m, hidden_dim_m = build_pretrain_cvae_for_modality(
+                cfg_m["input_dim"],
+                cfg_m["num_classes"],
+                cfg_m["hidden_layers"],
+                activation_dropout=cfg_m.get("activation_dropout", 0.0),
+                denoising=cfg_m.get("denoising", False),
+                mask_p=cfg_m.get("mask_p", 0.0),
+                mask_value=cfg_m.get("mask_value", 0.0),
+                loss_on_masked=cfg_m.get("loss_on_masked", True),
+                beta=cfg_m.get("beta", 1.0),
+            )
+            cvae_m = cvae_m.to(device)
+            print(f"  [{mod}] Random init (architecture from {path})")
+        else:
+            cvae_m, hidden_dim_m, cfg_m = load_cvae_with_config(path, map_location=device)
+            cvae_m = cvae_m.to(device)
         enc, dec = extract_encoder_decoder_from_cvae(cvae_m)
         encoders[mod] = enc
         decoders[mod] = dec
@@ -226,6 +247,7 @@ def run_one_experiment(
             grad_clip=cfg["grad_clip"],
             gaussian_noise_std=cfg["gaussian_noise_std"],
             tau=cfg["tau"],
+            loss_mode=cfg.get("loss_mode", "cosine"),
         )
         vl = conditional_eval_finetune_epoch(
             model=model, dataloader=val_loader, device=device,
@@ -235,6 +257,7 @@ def run_one_experiment(
             feature_mask_p=cfg["feature_mask_p_val"],
             alpha_mask_recon=cfg["alpha_mask_recon"],
             tau=cfg["tau"],
+            loss_mode=cfg.get("loss_mode", "cosine"),
         )
 
         for k_src, k_dst in [("total_loss", "total"), ("recon_loss", "recon"),
@@ -308,7 +331,9 @@ def parse_args():
     p.add_argument("--out",           default="cvae_phase2_results")
     p.add_argument("--device",        default=None)
     p.add_argument("--epochs",        type=int, default=150)
-    p.add_argument("--batch_size",    type=int, default=64)
+    p.add_argument("--batch_size",    type=int, default=256)
+    p.add_argument("--random_init", default=True, action="store_true",
+                   help="Randomly initialize CVAE encoders/decoders (use checkpoint only for architecture config)")
     p.add_argument("--experiments",   nargs="*", default=None,
                    help="Subset of experiment names to run (default: all)")
     return p.parse_args()
@@ -385,6 +410,7 @@ def main():
                 epochs=args.epochs,
                 batch_size=args.batch_size,
                 out_root=args.out,
+                random_init_encoders=args.random_init,
             )
             all_results.append(result)
         except Exception as e:
