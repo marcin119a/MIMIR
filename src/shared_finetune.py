@@ -46,6 +46,7 @@ def run_shared_finetune(
     tau: float = 0.3,
     loss_mode: str = "cosine",
     verbose: bool = True,
+    random_init_encoders: bool = False,
 ) -> Tuple[
     "MultiModalWithSharedSpace",
     Dict[str, List[float]],
@@ -62,7 +63,7 @@ def run_shared_finetune(
         model, train_loss_hist, val_loss_hist, train_loader, val_loader, test_loader, opt
     """
 
-    # 1) Load pretrained modality AEs and extract encoders/decoders + mask_values
+    # 1) Load/build modality AEs and extract encoders/decoders + mask_values
     encoders, decoders, hidden_dims = {}, {}, {}
     mask_values: Dict[str, float] = {}
 
@@ -72,10 +73,31 @@ def run_shared_finetune(
     for mod in multi_omic_data.keys():
         path = model_paths[mod]
         if not os.path.exists(path):
-            raise FileNotFoundError(f"Missing pretrained AE for modality '{mod}'. Expected file: {path}")
+            raise FileNotFoundError(f"Missing AE config for modality '{mod}'. Expected file: {path}")
 
-        ae_m, hidden_dim_m, cfg_m = load_modality_with_config(path, map_location=device)
-        ae_m = ae_m.to(device)
+        if random_init_encoders:
+            # Load architecture config only — skip pretrained weights (random init)
+            import torch as _torch
+            _data = _torch.load(path, map_location=device)
+            cfg_m = _data["config"]
+            ae_m, hidden_dim_m = build_pretrain_ae_for_modality(
+                cfg_m["input_dim"],
+                cfg_m["hidden_layers"],
+                activation_dropout=cfg_m.get("activation_dropout", 0.0),
+                denoising=cfg_m.get("denoising", False),
+                mask_p=cfg_m.get("mask_p", 0.0),
+                tied=cfg_m.get("tied", False),
+                mask_value=cfg_m.get("mask_value", 0.0),
+                loss_on_masked=cfg_m.get("loss_on_masked", True),
+                use_batchnorm=cfg_m.get("use_batchnorm", False),
+                gaussian_noise_std=cfg_m.get("gaussian_noise_std", 0.0),
+            )
+            ae_m = ae_m.to(device)
+            if verbose:
+                print(f"  [{mod}] Random init (architecture from {path})")
+        else:
+            ae_m, hidden_dim_m, cfg_m = load_modality_with_config(path, map_location=device)
+            ae_m = ae_m.to(device)
 
         enc, dec = extract_encoder_decoder_from_pretrained(ae_m)
         encoders[mod] = enc
