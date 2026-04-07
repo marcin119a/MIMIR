@@ -70,7 +70,7 @@ def parse_args():
     p.add_argument("--alpha_mask_recon",      type=float, default=0.5)
     p.add_argument("--freeze_encoders_decoders", action="store_true",
                    help="Freeze encoder/decoder weights; train only projection heads")
-    p.add_argument("--random_init", action="store_true",
+    p.add_argument("--random_init", default=True, action="store_true",
                    help="Randomly initialize encoders/decoders (use checkpoint only for architecture config)")
     p.add_argument("--two_path", action="store_true",
                    help="Use two-path (clean for contrastive, noisy for recon)")
