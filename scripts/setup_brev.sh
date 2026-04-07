@@ -6,8 +6,6 @@ set -euo pipefail
 REPO_URL="https://github.com/marcin119a/MIMIR.git"
 REPO_DIR="MIMIR"
 
-# Google Drive folder IDs (from README)
-DATA_FOLDER_ID="1340tEG3_bL9ojHJ8hQmMkBoZ9dSKYUhV"
 DATA_FILE_NAME="tcga_redo_mlomicZ.pkl"
 SPLITS_FILE_NAME="splits.json"
 
@@ -35,17 +33,11 @@ pip install torch torchvision torchaudio \
     --index-url https://download.pytorch.org/whl/cu121 \
     --quiet
 
-
-ssh-keygen -t ed25519 -C "marcin119a@gmail.com"
-cat ~/.ssh/id_ed25519.pub
-
-git remote set-url origin git@github.com:marcin119a/MIMIR.git
-
 # ── 4. Install remaining requirements ─────────────────────────────────────────
 echo "==> Installing project requirements..."
 pip install \
     numpy pandas scikit-learn matplotlib seaborn tqdm \
-    fancyimpute gdown \
+    fancyimpute kagglehub pyarrow fastparquet \
     --quiet
 
 # ── 5. Verify GPU is visible ──────────────────────────────────────────────────
@@ -59,20 +51,29 @@ else:
     print("    WARNING: CUDA not available – training will run on CPU")
 PYEOF
 
-# ── 6. Download data ──────────────────────────────────────────────────────────
-echo "==> Downloading data from Google Drive..."
+# ── 6. Download data from Kaggle and prepare pkl ──────────────────────────────
+echo "==> Downloading data from Kaggle and building pkl..."
 mkdir -p data
 
-# Download entire folder (gdown >= 4.6 supports --folder)
-if [ ! -f "data/$DATA_FILE_NAME" ] || [ ! -f "data/$SPLITS_FILE_NAME" ]; then
-    gdown --folder "https://drive.google.com/drive/folders/$DATA_FOLDER_ID" \
-          --output data/ --remaining-ok --quiet
-    echo "    Data downloaded to data/"
+if [ ! -f "data/$DATA_FILE_NAME" ]; then
+    python scripts/prepare_data.py
+    echo "    Data prepared and saved to data/"
 else
-    echo "    Data files already present – skipping download."
+    echo "    $DATA_FILE_NAME already present – skipping download."
 fi
 
-# ── 7. Run Phase 1 training ───────────────────────────────────────────────────
+# ── 7. Generate train/val/test splits ─────────────────────────────────────────
+echo "==> Generating train/val/test splits..."
+if [ ! -f "data/$SPLITS_FILE_NAME" ]; then
+    python src/create_splits.py \
+        --data   "data/$DATA_FILE_NAME" \
+        --output "data/$SPLITS_FILE_NAME"
+    echo "    Splits saved to data/$SPLITS_FILE_NAME"
+else
+    echo "    $SPLITS_FILE_NAME already present – skipping split generation."
+fi
+
+# ── 9. Run Phase 1 training ───────────────────────────────────────────────────
 echo "==> Starting Phase 1 autoencoder training..."
 python train_autoencoders.py \
     --data   "data/$DATA_FILE_NAME" \
@@ -83,7 +84,7 @@ echo ""
 echo "==> Done! Checkpoints saved to aes_redo_z/"
 
 
-# Run Phase 2 training
+# ── 10. Run Phase 2 training ──────────────────────────────────────────────────
 echo "==> Starting Phase 2 training..."
 python train_shared.py \
     --data   "data/$DATA_FILE_NAME" \
