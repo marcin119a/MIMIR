@@ -1,0 +1,152 @@
+[
+  {
+    "name": "1. Marcin-CVAE (Base)",
+    "config": {
+      "name": "1. Marcin-CVAE (Base)",
+      "use_batchnorm": false,
+      "add_final_activation": true,
+      "kl_reduction": "mean",
+      "beta": 1.0,
+      "deterministic": false,
+      "condition_on_site": true,
+      "l1_alpha": 0.0
+    },
+    "best_val_masked": 0.39377700431006296,
+    "best_val_overall": 0.38237306475639343
+  },
+  {
+    "name": "2. + LayerNorm",
+    "config": {
+      "name": "2. + LayerNorm",
+      "use_batchnorm": true,
+      "add_final_activation": true,
+      "kl_reduction": "mean",
+      "beta": 1.0,
+      "deterministic": false,
+      "condition_on_site": true,
+      "l1_alpha": 0.0
+    },
+    "best_val_masked": 0.3949834278651646,
+    "best_val_overall": 0.3843086702483041
+  },
+  {
+    "name": "3. - Final ReLU",
+    "config": {
+      "name": "3. - Final ReLU",
+      "use_batchnorm": true,
+      "add_final_activation": false,
+      "kl_reduction": "mean",
+      "beta": 1.0,
+      "deterministic": false,
+      "condition_on_site": true,
+      "l1_alpha": 0.0
+    },
+    "best_val_masked": 0.3949834278651646,
+    "best_val_overall": 0.3843086702483041
+  },
+  {
+    "name": "4. Fix KL (Mean->Sum)",
+    "config": {
+      "name": "4. Fix KL (Mean->Sum)",
+      "use_batchnorm": true,
+      "add_final_activation": false,
+      "kl_reduction": "sum",
+      "beta": 1.0,
+      "deterministic": false,
+      "condition_on_site": true,
+      "l1_alpha": 0.0
+    },
+    "best_val_masked": 0.5494315028190613,
+    "best_val_overall": 0.5484525050435748
+  },
+  {
+    "name": "5. Low Beta (1.0->0.1)",
+    "config": {
+      "name": "5. Low Beta (1.0->0.1)",
+      "use_batchnorm": true,
+      "add_final_activation": false,
+      "kl_reduction": "sum",
+      "beta": 0.1,
+      "deterministic": false,
+      "condition_on_site": true,
+      "l1_alpha": 0.0
+    },
+    "best_val_masked": 0.5177232793399266,
+    "best_val_overall": 0.5163277217320034
+  },
+  {
+    "name": "6. Zero Beta",
+    "config": {
+      "name": "6. Zero Beta",
+      "use_batchnorm": true,
+      "add_final_activation": false,
+      "kl_reduction": "sum",
+      "beta": 0.0,
+      "deterministic": false,
+      "condition_on_site": true,
+      "l1_alpha": 0.0
+    },
+    "best_val_masked": 0.32739950929369244,
+    "best_val_overall": 0.2987820676394871
+  },
+  {
+    "name": "7. Deterministic",
+    "config": {
+      "name": "7. Deterministic",
+      "use_batchnorm": true,
+      "add_final_activation": false,
+      "kl_reduction": "sum",
+      "beta": 0.0,
+      "deterministic": true,
+      "condition_on_site": true,
+      "l1_alpha": 0.0
+    },
+    "best_val_masked": 0.3571692109107971,
+    "best_val_overall": 0.31396963766642977
+  },
+  {
+    "name": "8. - Conditioning",
+    "config": {
+      "name": "8. - Conditioning",
+      "use_batchnorm": true,
+      "add_final_activation": false,
+      "kl_reduction": "sum",
+      "beta": 0.0,
+      "deterministic": true,
+      "condition_on_site": false,
+      "l1_alpha": 0.0
+    },
+    "best_val_masked": 0.36122870019504,
+    "best_val_overall": 0.34668077315602985
+  },
+  {
+    "name": "9. + L1 Latent",
+    "config": {
+      "name": "9. + L1 Latent",
+      "use_batchnorm": true,
+      "add_final_activation": false,
+      "kl_reduction": "sum",
+      "beta": 0.0,
+      "deterministic": true,
+      "condition_on_site": false,
+      "l1_alpha": 0.0001
+    },
+    "best_val_masked": 0.36122812969344004,
+    "best_val_overall": 0.3466811307838985
+  },
+  {
+    "name": "10. Mimir-AE (Target)",
+    "config": {
+      "name": "10. Mimir-AE (Target)",
+      "use_batchnorm": true,
+      "add_final_activation": false,
+      "kl_reduction": "sum",
+      "beta": 0.0,
+      "deterministic": true,
+      "condition_on_site": false,
+      "l1_alpha": 0.0001
+    },
+    "best_val_masked": 0.36122812969344004,
+    "best_val_overall": 0.3466811307838985
+  }
+]
