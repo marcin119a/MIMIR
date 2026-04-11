@@ -190,7 +190,7 @@ class ModalityCVAE(nn.Module):
         h = self.backbone(xc)
         mu = self.mu_head(h)
         logvar = self.logvar_head(h)
-        self._last_kl = -0.5 * (1.0 + logvar - mu.pow(2) - logvar.exp()).mean()
+        self._last_kl = -0.5 * torch.sum(1.0 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
         z = self._reparameterise(mu, logvar) if self.training else mu
         zc = torch.cat([z, c], dim=-1)
         x_recon = self.decoder(zc)

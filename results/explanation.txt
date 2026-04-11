@@ -1,0 +1,10 @@
+
+The performance gap between Mimir-AE (Original) and Mimir-CVAE (Marcin) is driven by three factors:
+
+1. Signal Removal: Mimir-AE aligns modalities using the dominant "Primary Site" (cancer type) signature. Mimir-CVAE conditions on this site, effectively "removing" it. This forces the model to align subtle biological residuals, which is a mathematically harder task than aligning the raw, cancer-driven signals.
+
+2. Normalization: The original AE uses LayerNorm (via build_mlp), providing significant numerical stability. Marcin's CVAE lacks this, leading to higher reconstruction MSE (0.587 vs 0.570).
+
+3. Regularization Weakness: The CVAE uses .mean() for KL divergence, scaling the penalty by 1/D (e.g., 1/512). This makes the latent space too "loose," failing to enforce the bottleneck required for high-quality cross-modal imputation.
+
+Conclusion: CVAE is "fairer" (ignores cancer type), but AE is "stronger" for raw imputation because it exploits the easiest-to-find shared signal.

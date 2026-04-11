@@ -266,7 +266,7 @@ def _kl_loss(
         logvar = logvar_dict.get(mod)
         if logvar is None:
             continue
-        kl = -0.5 * (1.0 + logvar - mu.pow(2) - logvar.exp()).mean()
+        kl = -0.5 * torch.sum(1.0 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
         kls.append(kl)
     if not kls:
         return next(iter(mu_dict.values())).new_tensor(0.0)
